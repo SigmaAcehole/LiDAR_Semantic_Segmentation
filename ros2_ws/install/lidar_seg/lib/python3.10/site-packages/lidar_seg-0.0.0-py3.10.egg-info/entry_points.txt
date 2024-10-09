@@ -1,0 +1,4 @@
+[console_scripts]
+listener_test = lidar_seg.listener_test:main
+preproc = lidar_seg.preproc:main
+

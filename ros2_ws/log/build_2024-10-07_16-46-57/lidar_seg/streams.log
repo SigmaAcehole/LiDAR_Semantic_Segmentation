@@ -1,0 +1,26 @@
+[0.845s] Invoking command in '/home/ubuntu/Internship/ros2_ws/src/lidar_seg': PYTHONPATH=/home/ubuntu/Internship/ros2_ws/build/lidar_seg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/lidar_seg build --build-base /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build install --record /home/ubuntu/Internship/ros2_ws/build/lidar_seg/install.log --single-version-externally-managed install_data
+[1.174s] running egg_info
+[1.175s] writing ../../build/lidar_seg/lidar_seg.egg-info/PKG-INFO
+[1.176s] writing dependency_links to ../../build/lidar_seg/lidar_seg.egg-info/dependency_links.txt
+[1.176s] writing entry points to ../../build/lidar_seg/lidar_seg.egg-info/entry_points.txt
+[1.176s] writing requirements to ../../build/lidar_seg/lidar_seg.egg-info/requires.txt
+[1.176s] writing top-level names to ../../build/lidar_seg/lidar_seg.egg-info/top_level.txt
+[1.178s] reading manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+[1.179s] adding license file 'LICENSE'
+[1.179s] writing manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+[1.179s] running build
+[1.180s] running build_py
+[1.180s] copying lidar_seg/listener_test.py -> /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build/lib/lidar_seg
+[1.180s] running install
+[1.181s] running install_lib
+[1.182s] copying /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build/lib/lidar_seg/listener_test.py -> /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg
+[1.183s] byte-compiling /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg/listener_test.py to listener_test.cpython-310.pyc
+[1.185s] running install_data
+[1.185s] running install_egg_info
+[1.188s] removing '/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info' (and everything under it)
+[1.188s] Copying ../../build/lidar_seg/lidar_seg.egg-info to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info
+[1.190s] running install_scripts
+[1.216s] Installing listener_test script to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/lidar_seg
+[1.216s] Installing preproc script to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/lidar_seg
+[1.217s] writing list of installed files to '/home/ubuntu/Internship/ros2_ws/build/lidar_seg/install.log'
+[1.251s] Invoked command in '/home/ubuntu/Internship/ros2_ws/src/lidar_seg' returned '0': PYTHONPATH=/home/ubuntu/Internship/ros2_ws/build/lidar_seg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/lidar_seg build --build-base /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build install --record /home/ubuntu/Internship/ros2_ws/build/lidar_seg/install.log --single-version-externally-managed install_data

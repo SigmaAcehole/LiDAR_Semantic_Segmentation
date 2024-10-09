@@ -1,0 +1,29 @@
+running egg_info
+writing ../../build/lidar_seg/lidar_seg.egg-info/PKG-INFO
+writing dependency_links to ../../build/lidar_seg/lidar_seg.egg-info/dependency_links.txt
+writing entry points to ../../build/lidar_seg/lidar_seg.egg-info/entry_points.txt
+writing requirements to ../../build/lidar_seg/lidar_seg.egg-info/requires.txt
+writing top-level names to ../../build/lidar_seg/lidar_seg.egg-info/top_level.txt
+reading manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+running build
+running build_py
+copying lidar_seg/listener_test.py -> /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build/lib/lidar_seg
+running install
+running install_lib
+copying /home/ubuntu/Internship/ros2_ws/build/lidar_seg/build/lib/lidar_seg/listener_test.py -> /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg
+byte-compiling /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg/listener_test.py to listener_test.cpython-310.pyc
+  File "/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg/listener_test.py", line 84
+    self.o3d.visualization.draw_geometries([o3d_pcd]
+                                          ^
+SyntaxError: '(' was never closed
+
+running install_data
+running install_egg_info
+removing '/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../../build/lidar_seg/lidar_seg.egg-info to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info
+running install_scripts
+Installing listener_test script to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/lidar_seg
+Installing preproc script to /home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/lidar_seg
+writing list of installed files to '/home/ubuntu/Internship/ros2_ws/build/lidar_seg/install.log'
