@@ -41,13 +41,13 @@ class PCListener(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'xyz_rgb', 10)
         timer_period = 1/20  # seconds
         self.timer = self.create_timer(timer_period, self.publisher_callback)
-        
-        # TODO: Initialize xyzrgb_cloud with correct shape  
+        self.i = 0
+        self.accum = np.zeros((1,6))
 
 
     # Callback for subscriber
     def listener_callback(self, msg):
-        self.get_logger().info('Received PointCloud2 message')
+        # self.get_logger().info('Received PointCloud2 message')
         cloud = np.array(list(read_points(msg)))
         height = msg.height
         width = msg.width
@@ -94,9 +94,21 @@ class PCListener(Node):
         header = Header()
     
         global xyzrgb_cloud, height, width
-        pointcloud_msg = point_cloud2.create_cloud(header, fields, xyzrgb_cloud)
-        pointcloud_msg.header.frame_id = "rgb"
-        self.publisher_.publish(pointcloud_msg)
+        # pointcloud_msg = point_cloud2.create_cloud(header, fields, xyzrgb_cloud)
+        # pointcloud_msg.header.frame_id = "rgb"
+        self.i+=1
+
+        if(self.i%5 < 5):
+            self.accum = np.append(self.accum, xyzrgb_cloud, axis = 0)
+            print(self.i%5)
+            pointcloud_msg = point_cloud2.create_cloud(header, fields, self.accum)
+            pointcloud_msg.header.frame_id = "rgb"
+
+        if(self.i%5 == 0):
+            self.publisher_.publish(pointcloud_msg)
+            self.accum = np.zeros((1,6))
+            print("Pub Shape: ", self.accum.shape)
+        
 
 
 # Get RGB values from normalized intensity value
@@ -165,7 +177,6 @@ def read_points(cloud, field_names= ['x', 'y', 'z', 'intensity'], skip_nans=True
     """
     assert isinstance(cloud, PointCloud2), 'cloud is not a sensor_msgs.msg.PointCloud2'
     fmt = _get_struct_fmt(cloud.is_bigendian, cloud.fields, field_names)
-    print(field_names)
     width, height, point_step, row_step, data, isnan = cloud.width, cloud.height, cloud.point_step, cloud.row_step, cloud.data, math.isnan
     unpack_from = struct.Struct(fmt).unpack_from
 
