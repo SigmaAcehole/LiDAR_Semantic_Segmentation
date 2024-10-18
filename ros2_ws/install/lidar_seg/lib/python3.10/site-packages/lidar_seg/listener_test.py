@@ -26,7 +26,7 @@ class PCListener(Node):
         ## Initialize open3d visualizer object and point cloud object
         # self.vis = o3d.visualization.Visualizer()
         # self.vis.create_window()
-        # self.o3d_pcd = o3d.geometry.PointCloud()
+        self.o3d_pcd = o3d.geometry.PointCloud()
 
         # Subscriber
         self.subscription = self.create_subscription(
@@ -35,6 +35,7 @@ class PCListener(Node):
             self.listener_callback,      # Function to call
             10                          # QoS
         )
+        self.j = 0
         self.subscription
 
         # Publisher
@@ -76,7 +77,13 @@ class PCListener(Node):
 
         ##       Uncomment to visualize point cloud using open3d        ##
         # self.vis.remove_geometry(self.o3d_pcd)
-        # self.o3d_pcd.points = o3d.utility.Vector3dVector(points)
+        self.o3d_pcd.points = o3d.utility.Vector3dVector(points)
+        if(self.j < 6):
+            string = "pc" + str(self.j) + ".pcd"
+            print(string)
+            print(self.j)
+            o3d.io.write_point_cloud(string, self.o3d_pcd)
+        self.j+=1
         # self.o3d_pcd.colors = o3d.utility.Vector3dVector(colors)
         # self.vis.add_geometry(self.o3d_pcd)
         # self.vis.poll_events()
@@ -100,14 +107,13 @@ class PCListener(Node):
 
         if(self.i%5 < 5):
             self.accum = np.append(self.accum, xyzrgb_cloud, axis = 0)
-            print(self.i%5)
+            # print(self.i%5)
             pointcloud_msg = point_cloud2.create_cloud(header, fields, self.accum)
             pointcloud_msg.header.frame_id = "rgb"
 
         if(self.i%5 == 0):
             self.publisher_.publish(pointcloud_msg)
             self.accum = np.zeros((1,6))
-            print("Pub Shape: ", self.accum.shape)
         
 
 

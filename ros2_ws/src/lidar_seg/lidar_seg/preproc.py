@@ -11,22 +11,13 @@ import struct
 from sensor_msgs.msg import PointCloud2, PointField
 from std_msgs.msg import Header
 import open3d as o3d
-
-# Useful global variables
-height = 1  
-width = 6
-xyzrgb_cloud = np.zeros((1,6)) # Global cloud variable connecting subscriber and publisher point cloud, size will be reshaped by subscriber
+from collections import deque
 
 
 class PreProc(Node):
 
     def __init__(self):
         super().__init__('preproc')
-
-        ##     Uncomment to initialize open3d visualization     ##
-        # self.vis = o3d.visualization.Visualizer()
-        # self.vis.create_window()
-        # self.o3d_pcd = o3d.geometry.PointCloud()
 
         # Subscriber
         self.subscription = self.create_subscription(
@@ -35,20 +26,31 @@ class PreProc(Node):
             self.listener_callback,      # Function to call
             10                          # QoS
         )
+        self.scan_num = 0
         self.subscription
 
         # Publisher
         self.publisher_ = self.create_publisher(PointCloud2, 'xyz_rgb', 10)
-        timer_period = 1/20  # seconds
+        timer_period = 1/10  # seconds
         self.timer = self.create_timer(timer_period, self.publisher_callback) 
+
+        # Initializing parameters and objects for moving window point cloud registration
+        self.is_first_scan = True 
+        self.global_trans_done = False
+        self.trans_init = np.ones((4,4))
+        self.window = deque()   # Queue used to maintain the moving window
+        self.window_size = 5    
+        self.voxel_size = 0.05
+        self.threshold_icp = 0.02
+        self.pc = o3d.geometry.PointCloud()   # The final dense point cloud that will be published
+        self.source = o3d.geometry.PointCloud() 
+        self.target = o3d.geometry.PointCloud()
 
 
     # Callback for subscriber
     def listener_callback(self, msg):
         self.get_logger().info('Received PointCloud2 message')
         cloud = np.array(list(read_points(msg)))    # Convert received point cloud to numpy array
-        height = msg.height
-        width = msg.width
 
         points =  np.array(cloud[:,0:3])    # XYZ coordinates
         colors = np.zeros((cloud.shape[0], 3))      # RGB channels
@@ -68,21 +70,50 @@ class PreProc(Node):
             intensity = 1 - (cloud[j,3] - intensity_min)/intensity_diff     # Normalized intensity
             colors[j,0], colors[j,1], colors[j,2] = get_RGB(intensity)      # Color mapping from normalized intensity to RGB
 
-        # Create XYZRGB array
-        global xyzrgb_cloud
-        xyzrgb_cloud = np.hstack((points, colors))
-
-        ##       Uncomment to visualize point cloud using open3d        ##
-        # self.vis.remove_geometry(self.o3d_pcd)
-        # self.o3d_pcd.points = o3d.utility.Vector3dVector(points)
-        # self.o3d_pcd.colors = o3d.utility.Vector3dVector(colors)
-        # self.vis.add_geometry(self.o3d_pcd)
-        # self.vis.poll_events()
-        # self.vis.update_renderer()
+        # Initialize moving window for ICP registration of window size as 5 using first 5 scans received
+        if(self.scan_num < self.window_size):
+            if(self.is_first_scan):     # It is the first scan so no registration is done
+                self.source.points = o3d.utility.Vector3dVector(points)
+                self.window.append(len(points))
+                self.pc.points = self.source.points
+                self.pc.colors = o3d.utility.Vector3dVector(colors)
+                self.is_first_scan = False
+            else:       # Registration begins from second scan 
+                self.target.points = o3d.utility.Vector3dVector(points)
+                self.window.append(len(points))
+                if(self.global_trans_done == False):
+                    self.trans_init = fast_global_registration(self.source, self.target, self.voxel_size)
+                    self.global_trans_done = True
+                transformation_matrix = icp_transformation(self.source, self.target, self.trans_init, self.threshold_icp)
+                self.pc.transform(transformation_matrix)
+                self.pc.points.extend(self.target.points)
+                self.pc.colors.extend(o3d.utility.Vector3dVector(colors))
+                self.source.points = self.target.points
+       
+        # Update the moving window
+        else:
+            self.target.points = o3d.utility.Vector3dVector(points)
+            # Remove previous scan points and colors
+            scan_remove = self.window.popleft()
+            self.pc.points = o3d.utility.Vector3dVector(np.delete(np.asarray(self.pc.points),np.s_[0:scan_remove], axis=0))
+            self.pc.colors = o3d.utility.Vector3dVector(np.delete(np.asarray(self.pc.colors),np.s_[0:scan_remove], axis=0))
+            self.window.append(len(points))
+            if(self.global_trans_done == False):
+                self.trans_init = fast_global_registration(self.source, self.target, self.voxel_size)
+                self.global_trans_done = True
+            transformation_matrix = icp_transformation(self.source, self.target, self.trans_init, self.threshold_icp)
+            self.pc.transform(transformation_matrix)
+            self.pc.points.extend(self.target.points)
+            self.pc.colors.extend(o3d.utility.Vector3dVector(colors))
+            self.source.points = self.target.points
+        
+        print("Scan no.: ", self.scan_num)
+        print("Window:", self.window)
+        self.scan_num += 1
 
     # Callback for publisher
     def publisher_callback(self):
-        # Create PointCloud2 message with custom fields
+        # Create PointCloud2 message with custom fields (X,Y,Z,R,G,B)
         header = Header()
         fields =[PointField(name = 'x', offset = 0, datatype = 7, count = 1),
                 PointField(name = 'y', offset = 4, datatype = 7, count = 1),
@@ -92,16 +123,83 @@ class PreProc(Node):
                 PointField(name = 'b', offset = 20, datatype = 7, count = 1),
                 ]
     
-        global xyzrgb_cloud, height, width
-        pointcloud_msg = point_cloud2.create_cloud(header, fields, xyzrgb_cloud)
+        pointcloud_msg = point_cloud2.create_cloud(header, fields, np.hstack((np.asarray(self.pc.points),np.asarray(self.pc.colors))))
         pointcloud_msg.header.frame_id = "rgb"
+
         self.publisher_.publish(pointcloud_msg)
 
 
-# Get RGB values from normalized intensity value
-# The code for the function is based on rviz's point cloud intensity based color transformer
-# Source (line 46): https://docs.ros.org/en/jade/api/rviz/html/c++/point__cloud__transformers_8cpp_source.html
+def icp_transformation(source, target, trans_init, threshold):
+    """
+    Returns transformation matrix between two point clouds computed using ICP algorithm.
+    @param source: The point cloud that needs to be transformed
+    @type source: open3d.geometry.PointCloud()
+    @param target: The point cloud with respect to which transformation is computed
+    @type target: open3d.geometry.PointCloud()
+    @param trans_init: A rough initial transformation matrix (can be computed using global alignment methods)
+    @type trans_init: Numpy array of shape (4,4)
+    @param threshold: Threshold for ICP in units of the XYZ coordinate system
+    @type treshold: float 
+    @return: The transformation matrix
+    @rtype: Numpy array of shape (4,4)
+    """
+    result_p2p = o3d.pipelines.registration.registration_icp(
+        source, target, threshold, trans_init,
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(),
+        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration = 50))
+    
+    # print(result_p2p)
+    return result_p2p.transformation
+
+def fast_global_registration(source, target, voxel_size):
+    """
+    Returns transformation matrix between two point clouds using fast global registration method. This is used as an initial approximate transformation by ICP.
+    @param source: The point cloud that needs to be transformed
+    @type source: open3d.geometry.PointCloud()
+    @param target: The point cloud with respect to which transformation is computed
+    @type target: open3d.geometry.PointCloud()
+    @param voxel_size: Size of voxel used for downsampling, in same units as the XYZ coordinate system
+    @type voxel_size: float
+    @return: The transformation matrix
+    @rtype: Numpy array of shape (4,4)
+    """
+    distance_threshold = voxel_size * 0.5
+    source_down, source_fpfh = preprocess_point_cloud(source, voxel_size) 
+    target_down, target_fpfh = preprocess_point_cloud(target, voxel_size)
+    result = o3d.pipelines.registration.registration_fgr_based_on_feature_matching(
+        source_down, target_down, source_fpfh, target_fpfh,
+        o3d.pipelines.registration.FastGlobalRegistrationOption(
+            maximum_correspondence_distance=distance_threshold))
+    return result.transformation
+
+def preprocess_point_cloud(pcd, voxel_size):
+    """
+    Returns downsampled pointcloud and features.
+    @param pcd: Input pointcloud
+    @type pcd: open3d.geometry.PointCloud()
+    @param voxel_size: Size of voxel used for downsampling, in same units as the XYZ coordinate system
+    @type voxel_size: float
+    @return: Downsampled pointcloud and extracted features
+    """
+    pcd_down = pcd.voxel_down_sample(voxel_size)
+    radius_normal = voxel_size * 2
+    pcd_down.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+    radius_feature = voxel_size * 5
+    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(pcd_down,o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+    return pcd_down, pcd_fpfh
+
+"""
+The code for the function below is based on rviz's point cloud intensity based color transformer
+Source (line 46): https://docs.ros.org/en/jade/api/rviz/html/c++/point__cloud__transformers_8cpp_source.html
+"""
 def get_RGB(val):
+    """
+    Returns RGB values from normalized intensity value.
+    @param val: Normalized intensity value
+    @type val: float
+    @return: R, G and B values in range [0,1]
+    @rtype: float  
+    """
     # Make sure val is in range [0,1]
     val = min(val,1)
     val = max(val,0)
@@ -135,8 +233,10 @@ def get_RGB(val):
     
     return r,g,b
 
-# The code for function below to read and unpack PointCloud2 message is taken from:        
-# https://github.com/ros/common_msgs/blob/noetic-devel/sensor_msgs/src/sensor_msgs/point_cloud2.py
+"""
+The code for function below to read and unpack PointCloud2 message is taken from:        
+https://github.com/ros/common_msgs/blob/noetic-devel/sensor_msgs/src/sensor_msgs/point_cloud2.py
+"""
 _DATATYPES = {}
 _DATATYPES[PointField.INT8]    = ('b', 1)
 _DATATYPES[PointField.UINT8]   = ('B', 1)
@@ -164,7 +264,6 @@ def read_points(cloud, field_names= ['x', 'y', 'z', 'intensity'], skip_nans=True
     """
     assert isinstance(cloud, PointCloud2), 'cloud is not a sensor_msgs.msg.PointCloud2'
     fmt = _get_struct_fmt(cloud.is_bigendian, cloud.fields, field_names)
-    print(field_names)
     width, height, point_step, row_step, data, isnan = cloud.width, cloud.height, cloud.point_step, cloud.row_step, cloud.data, math.isnan
     unpack_from = struct.Struct(fmt).unpack_from
 
@@ -227,9 +326,6 @@ def main(args=None):
 
     rclpy.spin(subscriber)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     subscriber.destroy_node()
     rclpy.shutdown()
 
