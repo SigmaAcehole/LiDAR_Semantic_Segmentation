@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'preproc = lidar_seg.preproc:main',
-            'listener_test = lidar_seg.listener_test:main'
+            'listener_test = lidar_seg.listener_test:main',
+            'model = lidar_seg.model:main'
         ],
     },
 )
