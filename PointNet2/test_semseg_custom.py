@@ -76,12 +76,13 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 13
+    NUM_CLASSES = 4
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
     '''MODEL LOADING'''
     model_name = os.listdir(experiment_dir + '/logs')[0].split('.')[0]
+    print("model name = ", model_name)
     MODEL = importlib.import_module(model_name)
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
     #classifier = MODEL.get_model(NUM_CLASSES)

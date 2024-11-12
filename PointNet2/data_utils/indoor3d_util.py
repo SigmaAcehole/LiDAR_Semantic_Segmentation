@@ -24,19 +24,25 @@ g_class2label = {cls: i for i,cls in enumerate(g_classes)}
 #                  'board':       [200,200,200],
 #                  'clutter':     [50,50,50]} 
 
-g_class2color = {'ceiling':	[0,0,0],
-                 'floor':	[0,0,0],
-                 'wall':	[0,255,0],  # Green
-                 'beam':        [0,0,0],
-                 'column':      [0,0,0],
+# g_class2color = {'ceiling':	[0,0,0],
+#                  'floor':	[0,0,0],
+#                  'wall':	[0,255,0],  # Green
+#                  'beam':        [0,0,0],
+#                  'column':      [0,0,0],
+#                  'window':      [255,0,0],  # Red
+#                  'door':        [0,0,255],  # Blue
+#                  'table':       [0,0,0],
+#                  'chair':       [0,0,0],
+#                  'sofa':        [0,0,0],
+#                  'bookcase':    [0,0,0],
+#                  'board':       [0,0,0],
+#                  'clutter':     [0,0,0]} 
+
+g_class2color = {'wall':	[0,255,0],  # Green
                  'window':      [255,0,0],  # Red
                  'door':        [0,0,255],  # Blue
-                 'table':       [0,0,0],
-                 'chair':       [0,0,0],
-                 'sofa':        [0,0,0],
-                 'bookcase':    [0,0,0],
-                 'board':       [0,255,255],
-                 'clutter':     [0,0,0]} 
+                 'clutter':     [0,0,0]}    # Black
+
 g_easy_view_labels = [7,8,9,10,11,1]
 g_label2color = {g_classes.index(cls): g_class2color[cls] for cls in g_classes}
 

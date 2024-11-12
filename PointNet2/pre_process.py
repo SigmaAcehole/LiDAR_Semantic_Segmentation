@@ -35,8 +35,8 @@ def main():
 
     print(data.shape)
     
-    data = get_plane(data)
-    print(data.shape)
+    # data = get_plane(data)
+    # print(data.shape)
     np.save('lab_corridor_processed.npy', data)
 
     data_room, index_room = prepare_data(data, block_points=4096)
