@@ -2,11 +2,10 @@
 ## PointNet2
 Pre-requisites:
 
-## Tested environment and hardware
+## Tested environment
 1. OS: Ubuntu 22.04 LTS (Used WSL2 but dual-boot should work as well)
-2. GPU: Nvidia RTX 3050 Mobile (4 GB)
-3. CPU: ARM Ryzen 5 5600H
-4. ROS2 humble
+2. Python 3.11.10
+3. PyTorch 2.5.1 with CUDA 11.8.
 
 ## Setup environment
 Recommended to setup a virtual environment using conda to avoid dependency issues with libraries. Code tested with Python 3.11.10, PyTorch 2.5.1 and CUDA 11.8.
@@ -29,9 +28,18 @@ If any other library needs to be installed (ex: numpy), install it using conda. 
 
 
 ## Data preparation
-1. Download Stanford 3D Indoor Scene (S3DIS) dataset.
-2. Unzip.
-3. Run this script.
+1. Create the following directory to store dataset and processed dataset.
+```shell
+mkdir data/
+mkdir data/stanford_indoor3d_downsampled
+```
+2. Download `Stanford3dDataset_v1.2_Aligned_Version.zip` from [here](https://cvg-data.inf.ethz.ch/s3dis/).
+3. Unzip and store it inside `data/`. The directory structure should be `data/Stanford3dDataset_v1.2_Aligned_Version` now.
+3. Run the dataset processing script. This script will collect each room from the original dataset, append label index, downsample it, format it as XYZRGBL and store it as `.npy` files. The processed `.npy` files will be stored inside `data/stanford_indoor3d_downsampled`.
+```shell
+python collect_downsample.py 
+```
+Both the train and test scripts use the created `.npy` files.
 
 ## Training 
 Pre-trained model is available `./log/pointnet2_sem_seg/checkpoints/best_model.pth`. However, if model needs to be trained on S3DIS dataset then follow the following instructions.

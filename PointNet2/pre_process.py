@@ -92,14 +92,6 @@ def prepare_data(points, block_points=4096):
     index_room = index_room.reshape((-1, block_points))
     return data_room, index_room
 
-def add_vote(vote_label_pool, point_idx, pred_label):
-    B = pred_label.shape[0]
-    N = pred_label.shape[1]
-    for b in range(B):
-        for n in range(N):
-            vote_label_pool[int(point_idx[b, n]), int(pred_label[b, n])] += 1
-    return vote_label_pool
-
 def get_plane(data):
 
     pc = o3d.geometry.PointCloud()
