@@ -3,6 +3,8 @@ import glob
 import os
 import sys
 
+import open3d as o3d
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
@@ -78,7 +80,7 @@ def collect_point_label(anno_path, out_filename, file_format='txt'):
     data_label = np.concatenate(points_list, 0)
     xyz_min = np.amin(data_label, axis=0)[0:3]
     data_label[:, 0:3] -= xyz_min
-    
+
     if file_format=='txt':
         fout = open(out_filename, 'w')
         for i in range(data_label.shape[0]):

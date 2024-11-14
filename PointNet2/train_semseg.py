@@ -24,6 +24,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'models'))
 # classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
 #            'board', 'clutter']
 
+# New classes
 ''' wall = 0
     window = 1
     door = 2
