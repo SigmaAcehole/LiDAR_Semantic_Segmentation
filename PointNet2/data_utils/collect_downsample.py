@@ -92,7 +92,7 @@ def down_sample(data):
     pc.points = o3d.utility.Vector3dVector(data[:,:3])
     pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
     pc.normals = o3d.utility.Vector3dVector(labels)   # Storing labels as normals as open3d PointCloud() has no labels
-    sampling_ratio = 0.5    # no. of sampled points/total points
+    sampling_ratio = 0.5    # no. of sampled points/total no. of points. To sample all points keep it as 1.
     pc_down = pc.random_down_sample(sampling_ratio)
     points = np.asarray(pc_down.points)
     colors = np.asarray(pc_down.colors)
