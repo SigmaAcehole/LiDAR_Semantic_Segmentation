@@ -14,7 +14,7 @@ class S3DISDataset(Dataset):
         rooms = sorted(os.listdir(data_root))
         rooms = [room for room in rooms if 'Area_' in room]
         if split == 'train':
-            rooms_split = [room for room in rooms if 'Area_{}'.format(test_area) in room]
+            rooms_split = [room for room in rooms if not 'Area_{}'.format(test_area) in room]
         else:
             rooms_split = [room for room in rooms if 'Area_{}'.format(test_area) in room]
 
