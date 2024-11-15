@@ -105,7 +105,6 @@ def main(args):
         vote_label_pool = np.zeros((whole_scene_data.shape[0], NUM_CLASSES))
         for _ in tqdm(range(args.num_votes), total=args.num_votes):
             start = time.time()
-            # scene_data, scene_label, scene_smpw, scene_point_index = TEST_DATASET_WHOLE_SCENE[batch_idx]
             # print("scene_data = ", scene_data.shape)
             # print("scene_label = ", scene_label.shape)
             # print("scene_smpw = ", scene_smpw.shape)
@@ -115,40 +114,27 @@ def main(args):
             s_batch_num = (num_blocks + BATCH_SIZE - 1) // BATCH_SIZE
             print("s_batch_num = ", s_batch_num)
             batch_data = np.zeros((BATCH_SIZE, NUM_POINT, 9))
-
-            # batch_label = np.zeros((BATCH_SIZE, NUM_POINT))
             batch_point_index = np.zeros((BATCH_SIZE, NUM_POINT))
-            # batch_smpw = np.zeros((BATCH_SIZE, NUM_POINT))
 
             for sbatch in range(s_batch_num):
                 start_idx = sbatch * BATCH_SIZE
                 end_idx = min((sbatch + 1) * BATCH_SIZE, num_blocks)
                 real_batch_size = end_idx - start_idx
                 batch_data[0:real_batch_size, ...] = scene_data[start_idx:end_idx, ...]
-                # batch_label[0:real_batch_size, ...] = scene_label[start_idx:end_idx, ...]
                 batch_point_index[0:real_batch_size, ...] = scene_point_index[start_idx:end_idx, ...]
-                # batch_smpw[0:real_batch_size, ...] = scene_smpw[start_idx:end_idx, ...]
                 batch_data[:, :, 3:6] /= 1.0
 
                 torch_data = torch.Tensor(batch_data)
                 torch_data = torch_data.float().cuda()
                 #torch_data = torch_data.float()
                 torch_data = torch_data.transpose(2, 1)
-                print("torch_data = ", torch_data.shape) # torch.Size([4, 9, 4096])
+                print("torch_data = ", torch_data.shape) 
                 seg_pred, _ = classifier(torch_data)
                 batch_pred_label = seg_pred.contiguous().cpu().data.max(2)[1].numpy()
 
                 vote_label_pool = add_vote(vote_label_pool, batch_point_index[0:real_batch_size, ...],
                                             batch_pred_label[0:real_batch_size, ...])
                 
-                # print("batch_pred_label: ", batch_pred_label[:,:10])
-                # print("batch_pred_label = ", batch_pred_label.shape) # (4, 4096)
-                # print("real_batch_pred_label = ", batch_pred_label[0:real_batch_size, ...].shape)
-                # print("vote_label_pool = ", vote_label_pool.shape)
-                # print("real_batch_size = ", real_batch_size)
-                # print("batch_pred_idx = ", batch_point_index[0:real_batch_size, ...])
-
-                # pred_label[start_idx:end_idx]
 
             pred_label = np.argmax(vote_label_pool, 1)
             print("pred_label = ", pred_label.shape)
