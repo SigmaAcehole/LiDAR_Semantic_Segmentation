@@ -43,16 +43,19 @@ class PreProc(Node):
         self.voxel_size = 0.05
         self.threshold_icp = 0.02
         self.pc = o3d.geometry.PointCloud()   # The final dense point cloud that will be published
+        self.pc.points = o3d.utility.Vector3dVector(np.zeros((1,3)))
+        self.pc.colors = o3d.utility.Vector3dVector(np.zeros((1,3)))
         self.source = o3d.geometry.PointCloud() 
         self.target = o3d.geometry.PointCloud()
+
+        self.intensity = np.zeros((1,1))
 
 
     # Callback for subscriber
     def listener_callback(self, msg):
-        self.get_logger().info('Received PointCloud2 message')
-        cloud = np.array(list(read_points(msg)))    # Convert received point cloud to numpy array
+        cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'intensity'])))    # Extract XYZ and intensity from incoming point cloud and store as numpy array
 
-        points =  np.array(cloud[:,0:3])    # XYZ coordinates
+        points =  cloud[:,0:3]    # XYZ coordinates
         colors = np.zeros((cloud.shape[0], 3))      # RGB channels
 
         # Compute min and max intensity from cloud
@@ -65,16 +68,19 @@ class PreProc(Node):
         intensity_min = max(-9999, intensity_min)
         intensity_diff = intensity_max - intensity_min
 
+
         # Compute RGB colors based on intensity
         for j in range(cloud.shape[0]):
-            intensity = 1 - (cloud[j,3] - intensity_min)/intensity_diff     # Normalized intensity
-            colors[j,0], colors[j,1], colors[j,2] = get_RGB(intensity)      # Color mapping from normalized intensity to RGB
+            intensity_norm = 1 - (cloud[j,3] - intensity_min)/intensity_diff     # Normalized intensity
+            colors[j,0], colors[j,1], colors[j,2] = get_RGB(intensity_norm)      # Color mapping from normalized intensity to RGB
 
         # Initialize moving window for ICP registration of window size as 5 using first 5 scans received
         if(self.scan_num < self.window_size):
             if(self.is_first_scan):     # It is the first scan so no registration is done
                 self.source.points = o3d.utility.Vector3dVector(points)
                 self.window.append(len(points))
+                self.intensity = cloud[:,3].reshape((len(points),1))  
+                print(self.intensity.shape)
                 self.pc.points = self.source.points
                 self.pc.colors = o3d.utility.Vector3dVector(colors)
                 self.is_first_scan = False
@@ -88,8 +94,10 @@ class PreProc(Node):
                 self.pc.transform(transformation_matrix)
                 self.pc.points.extend(self.target.points)
                 self.pc.colors.extend(o3d.utility.Vector3dVector(colors))
+                print("Before: ", self.intensity.shape)
+                self.intensity = np.vstack((self.intensity, cloud[:,3].reshape((len(points),1))))
+                print("After: ", self.intensity.shape)
                 self.source.points = self.target.points
-       
         # Update the moving window
         else:
             self.target.points = o3d.utility.Vector3dVector(points)
@@ -97,6 +105,7 @@ class PreProc(Node):
             scan_remove = self.window.popleft()
             self.pc.points = o3d.utility.Vector3dVector(np.delete(np.asarray(self.pc.points),np.s_[0:scan_remove], axis=0))
             self.pc.colors = o3d.utility.Vector3dVector(np.delete(np.asarray(self.pc.colors),np.s_[0:scan_remove], axis=0))
+            self.intensity = np.delete(self.intensity, np.s_[0:scan_remove], axis=0)
             self.window.append(len(points))
             if(self.global_trans_done == False):
                 self.trans_init = fast_global_registration(self.source, self.target, self.voxel_size)
@@ -105,15 +114,14 @@ class PreProc(Node):
             self.pc.transform(transformation_matrix)
             self.pc.points.extend(self.target.points)
             self.pc.colors.extend(o3d.utility.Vector3dVector(colors))
+            self.intensity = np.vstack((self.intensity, cloud[:,3].reshape((len(points),1))))
             self.source.points = self.target.points
         
-        print("Scan no.: ", self.scan_num)
-        print("Window:", self.window)
         self.scan_num += 1
 
     # Callback for publisher
     def publisher_callback(self):
-        # Create PointCloud2 message with custom fields (X,Y,Z,R,G,B)
+        # Create PointCloud2 message with custom fields (X,Y,Z,R,G,B,Intensity)
         header = Header()
         fields =[PointField(name = 'x', offset = 0, datatype = 7, count = 1),
                 PointField(name = 'y', offset = 4, datatype = 7, count = 1),
@@ -121,12 +129,17 @@ class PreProc(Node):
                 PointField(name = 'r', offset = 12, datatype = 7, count = 1),
                 PointField(name = 'g', offset = 16, datatype = 7, count = 1),
                 PointField(name = 'b', offset = 20, datatype = 7, count = 1),
+                PointField(name = 'intensity', offset = 24, datatype = 7, count = 1,)
                 ]
-    
-        pointcloud_msg = point_cloud2.create_cloud(header, fields, np.hstack((np.asarray(self.pc.points),np.asarray(self.pc.colors))))
-        pointcloud_msg.header.frame_id = "rgb"
 
-        self.publisher_.publish(pointcloud_msg)
+        print("Scan no.: ", self.scan_num)
+        print("Window:", self.window)
+        print("Intensity shape: ", self.intensity.shape)
+        # Publisher after moving window created
+        if(self.scan_num >= self.window_size):       
+            pointcloud_msg = point_cloud2.create_cloud(header, fields, np.concatenate((np.asarray(self.pc.points),np.asarray(self.pc.colors),self.intensity),axis=1))
+            pointcloud_msg.header.frame_id = "rgb"
+            self.publisher_.publish(pointcloud_msg)
 
 
 def icp_transformation(source, target, trans_init, threshold):
@@ -247,7 +260,7 @@ _DATATYPES[PointField.UINT32]  = ('I', 4)
 _DATATYPES[PointField.FLOAT32] = ('f', 4)
 _DATATYPES[PointField.FLOAT64] = ('d', 8)
 
-def read_points(cloud, field_names= ['x', 'y', 'z', 'intensity'], skip_nans=True, uvs=[]):
+def read_points(cloud, field_names= [], skip_nans=True, uvs=[]):
     """
     Read points from a L{sensor_msgs.PointCloud2} message.
 

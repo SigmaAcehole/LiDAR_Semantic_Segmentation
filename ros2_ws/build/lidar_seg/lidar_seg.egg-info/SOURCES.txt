@@ -11,6 +11,7 @@ setup.py
 ../../build/lidar_seg/lidar_seg.egg-info/zip-safe
 lidar_seg/__init__.py
 lidar_seg/listener_test.py
+lidar_seg/model.py
 lidar_seg/preproc.py
 resource/lidar_seg
 test/test_copyright.py

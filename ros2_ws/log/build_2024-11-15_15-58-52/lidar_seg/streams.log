@@ -1,0 +1,27 @@
+[0.522s] Invoking command in '/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/src/lidar_seg': CONDA_PROMPT_MODIFIER=(base) PYTHONPATH=/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/lidar_seg build --build-base /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/build install --record /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/install.log --single-version-externally-managed install_data
+[0.717s] running egg_info
+[0.717s] writing ../../build/lidar_seg/lidar_seg.egg-info/PKG-INFO
+[0.718s] writing dependency_links to ../../build/lidar_seg/lidar_seg.egg-info/dependency_links.txt
+[0.718s] writing entry points to ../../build/lidar_seg/lidar_seg.egg-info/entry_points.txt
+[0.718s] writing requirements to ../../build/lidar_seg/lidar_seg.egg-info/requires.txt
+[0.718s] writing top-level names to ../../build/lidar_seg/lidar_seg.egg-info/top_level.txt
+[0.720s] reading manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+[0.720s] adding license file 'LICENSE'
+[0.720s] writing manifest file '../../build/lidar_seg/lidar_seg.egg-info/SOURCES.txt'
+[0.721s] running build
+[0.721s] running build_py
+[0.721s] copying lidar_seg/preproc.py -> /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/build/lib/lidar_seg
+[0.722s] running install
+[0.722s] running install_lib
+[0.723s] copying /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/build/lib/lidar_seg/preproc.py -> /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg
+[0.723s] byte-compiling /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg/preproc.py to preproc.cpython-310.pyc
+[0.725s] running install_data
+[0.725s] running install_egg_info
+[0.726s] removing '/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info' (and everything under it)
+[0.727s] Copying ../../build/lidar_seg/lidar_seg.egg-info to /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg-0.0.0-py3.10.egg-info
+[0.728s] running install_scripts
+[0.744s] Installing listener_test script to /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/lidar_seg
+[0.744s] Installing model script to /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/lidar_seg
+[0.744s] Installing preproc script to /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/lidar_seg
+[0.744s] writing list of installed files to '/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/install.log'
+[0.765s] Invoked command in '/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/src/lidar_seg' returned '0': CONDA_PROMPT_MODIFIER=(base) PYTHONPATH=/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/install/lidar_seg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/lidar_seg build --build-base /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/build install --record /home/ubuntu/Internship/LiDAR_Semantic_Segmentation/ros2_ws/build/lidar_seg/install.log --single-version-externally-managed install_data

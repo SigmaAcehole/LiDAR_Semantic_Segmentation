@@ -41,6 +41,7 @@ conda activate pointnet2
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 conda install tqdm
 conda install conda-forge::open3d
+conda install conda-forge::matplotlib
 ```
 If any other package needs to be installed (ex: numpy), install it using conda. If package is not available in conda then use pip.
 
@@ -52,7 +53,7 @@ mkdir data/
 mkdir data/stanford_indoor3d_downsampled
 ```
 2. Download `Stanford3dDataset_v1.2_Aligned_Version.zip` from [here](https://cvg-data.inf.ethz.ch/s3dis/).
-3. Unzip and store it inside `data/`. The directory structure should be `data/Stanford3dDataset_v1.2_Aligned_Version` now. If the original dataset is unzipped in a different location (ex: `/mnt/dataset` in the AI server of SMART lab), then change the `DATA_PATH` variable in line 13 of `data_utils/collect_downsample.py`.
+3. Unzip and store it inside `data/`. The directory structure should be `data/Stanford3dDataset_v1.2_Aligned_Version` now. If the original dataset is unzipped in a different location, then change the `DATA_PATH` variable in line 13 of `data_utils/collect_downsample.py`.
 3. Run the dataset processing script. This script will collect each room from the original dataset, append label index, downsample it, format it as XYZRGBL and store it as `.npy` files. The processed `.npy` files will be stored inside `data/stanford_indoor3d_downsampled`.
 ```shell
 cd data_utils
@@ -66,7 +67,19 @@ Pre-trained model is available `log/sem_seg/pointnet2_sem_seg/checkpoints/best_m
 ```shell
 python train_semseg.py --model pointnet2_sem_seg --test_area 5 --batch_size 32 --epoch 32
 ```
-It is recommended to use a smaller batch size if training on laptop. If the train script stops running with a "Killed" message then most likely it means it ran out of RAM memory, so reduce batch size in this case.
+It is recommended to use a smaller batch size if training on laptop. If the train script fails with a "Killed" message then most likely it means it ran out of RAM memory, so reduce batch size in this case.
 
-## Testing
-Trained models are available inside `log/semseg`. 
+## Testing on S3DIS
+Trained models are available inside `log/semseg`. To quantitatively evaluate the trained model on area 5 of S3DIS (or any other area), run the test script.
+
+```shell
+python test_semseg_custom.py --log_dir pointnet2_sem_seg --test_area 5 --visual --batch_size 16
+```
+You can choose a different model from `log/semseg` with the `--log_dir` arguement. If the test scrip fails with a "Killed" message then reduce `--batch_size`.
+
+## Testing on custom data
+Trained models can be tested on custom data without labels for a qualitative evaluation. The custom pointcloud data should have atleast XYZRGB features. The custom data needs to be pre-processed before running inference for which a pre-process script is provided.    
+1. Save your custom data as a `.npy` file inside `test_data/`. If your data is in a different format, you will have to write a script to convert it into a `.npy` file with first 6 columns being XYZRGB.
+2. Run pre-process
+
+## References

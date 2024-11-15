@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--log_dir', type=str, required=True, help='experiment root')
     parser.add_argument('--visual', action='store_true', default=False, help='visualize result [default: False]')
     parser.add_argument('--test_area', type=int, default=5, help='area for testing, option: 1-6 [default: 5]')
-    parser.add_argument('--num_votes', type=int, default=3, help='aggregate segmentation scores with voting [default: 3]')
+    parser.add_argument('--num_votes', type=int, default=1, help='aggregate segmentation scores with voting [default: 1]')
     return parser.parse_args()
 
 
@@ -76,7 +76,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 4
+    NUM_CLASSES = 13 #4
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
@@ -94,9 +94,9 @@ def main(args):
     with torch.no_grad():
         log_string('---- EVALUATION WHOLE SCENE----')
 
-        scene_data = np.load('scene_data.npy')
-        scene_point_index = np.load('scene_point_index.npy')
-        whole_scene_data = np.load('lab_corridor_processed.npy')
+        scene_data = np.load('test_data/scene_data.npy')
+        scene_point_index = np.load('test_data/scene_point_index.npy')
+        whole_scene_data = np.load('test_data/lab_corridor_processed.npy')
 
         print("scene_data = ", scene_data.shape)
         print("scene_point_index = ", scene_point_index.shape)
@@ -137,6 +137,7 @@ def main(args):
                 
 
             pred_label = np.argmax(vote_label_pool, 1)
+            pred_label = np.reshape(pred_label, (pred_label.shape[0], 1))
             print("pred_label = ", pred_label.shape)
             print("Time %.3f sec.\n" % (time.time() - start))
 
@@ -151,7 +152,7 @@ def main(args):
                 pl_save.write(str(int(i)) + '\n')
             pl_save.close()
         for i in range(whole_scene_data.shape[0]):
-            color = g_label2color[pred_label[i]]
+            color = g_label2color[pred_label[i,0]]
             if args.visual:
                 fout.write('%f %f %f %d %d %d\n' % (
                     whole_scene_data[i, 0], whole_scene_data[i, 1], whole_scene_data[i, 2], color[0], color[1],
@@ -160,6 +161,10 @@ def main(args):
         if args.visual:
             fout.close()
 
+        # Save point cloud with predictions, XYZRGBP or XYZRGBIP
+        segmented_scene = np.hstack((whole_scene_data, pred_label)) 
+        print("segmented_scene = ", segmented_scene.shape)
+        np.save("test_data/segmented_scene.npy", segmented_scene)
         print("Done!")
 
 
