@@ -17,12 +17,12 @@ def main():
     print("Number of doors: ", len(door_center)-1)
     print(door_center)
 
-    fout = open("test_data/segmented_door_clustered.txt", 'w')
-    for i in range(data_cluster.shape[0]):
-            fout.write('%f %f %f %d %d %d\n' % (
-                data_cluster[i, 0], data_cluster[i, 1], data_cluster[i, 2], data_cluster[i, 3], data_cluster[i, 4],
-                data_cluster[i, 5]))
-    fout.close() 
+    # fout = open("test_data/segmented_door_clustered.txt", 'w')
+    # for i in range(data_cluster.shape[0]):
+    #         fout.write('%f %f %f %d %d %d\n' % (
+    #             data_cluster[i, 0], data_cluster[i, 1], data_cluster[i, 2], data_cluster[i, 3], data_cluster[i, 4],
+    #             data_cluster[i, 5]))
+    # fout.close() 
 
 def compute_cluster(pc):
     # Downsample
@@ -49,18 +49,22 @@ def get_plane(pc):
     _, inliers2 = outlier_cloud.segment_plane(distance_threshold=0.1, ransac_n=3, num_iterations=5000, probability=0.9999)
     inlier_cloud2 = outlier_cloud.select_by_index(inliers2)
     pc_ransac = copy.deepcopy(inlier_cloud)
-    pc_ransac.points.extend(inlier_cloud2.points)
-    pc_ransac.colors.extend(inlier_cloud2.colors)
-    pc_ransac.normals.extend(inlier_cloud2.normals)
+    pc_ransac.point.positions.extend(inlier_cloud2.point.positions)
+    pc_ransac.point.colors.extend(inlier_cloud2.point.colors)
+    pc_ransac.point.normals.extend(inlier_cloud2.point.normals)
 
     return pc_ransac
 
 def segment_doors(data):
-    pc = o3d.geometry.PointCloud()
+    dtype = o3d.core.float32
+    pc = o3d.t.geometry.PointCloud()
     intensity = np.array([data[:,6], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
-    pc.points = o3d.utility.Vector3dVector(data[:,:3])
-    pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
-    pc.normals = o3d.utility.Vector3dVector(intensity)
+    # pc.point.positions = o3d.utility.Vector3dVector(data[:,:3])
+    # pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
+    # pc.normals = o3d.utility.Vector3dVector(intensity)
+    pc.point.positions = o3d.core.Tensor(data[:,:3], dtype)
+    pc.point.colors = o3d.core.Tensor(data[:,3:6], dtype)
+    pc.point.normals = o3d.core.Tensor(intensity, dtype)
 
     # Segment wall plane using RANSAC
     pc_ransac = get_plane(pc)
@@ -89,6 +93,12 @@ def segment_doors(data):
             (x,y,z) = cluster.get_center()
             door_center.append([x,y,z])
             new_colors[ind,:] = (255,0,0)
+
+        # Detect boundary of cluster
+        boundarys, mask = cluster.compute_boundary_points(0.02, 30)
+        boundarys = boundarys.paint_uniform_color([1.0, 0.0, 0.0])
+        print("Boundary = ", len(boundarys.points))
+        print("Mask = ", len(mask))
             
     pc_cluster.colors = o3d.utility.Vector3dVector(new_colors)
     data_segmented = np.hstack([np.asarray(pc_cluster.points), np.asarray(pc_cluster.colors)])
