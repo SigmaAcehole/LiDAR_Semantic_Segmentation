@@ -7,7 +7,8 @@ from plyfile import PlyData
 
 
 def main():
-    DATA_PATH = '../../../PointNet2/lidarnet/working/'
+    # DATA_PATH = '../../../PointNet2/lidarnet/working/'
+    DATA_PATH = '/mnt/datasets/Eshan/working'
 
     # Store all file names in a list
     ply_files = []
