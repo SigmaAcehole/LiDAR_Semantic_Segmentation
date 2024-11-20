@@ -52,13 +52,13 @@ mkdir data/
 mkdir data/stanford_indoor3d_downsampled
 ```
 2. Download `Stanford3dDataset_v1.2_Aligned_Version.zip` from [here](https://cvg-data.inf.ethz.ch/s3dis/).
-3. Unzip and store it inside `data/`. The directory structure should be `data/Stanford3dDataset_v1.2_Aligned_Version` now. If the original dataset is unzipped in a different location (ex: `/mnt/dataset` in the AI server of SMART lab), then change the `DATA_PATH` variable in line 13 of `data_utils/collect_downsample.py`.
+3. Unzip and store it inside `data/`. The directory structure should be `data/Stanford3dDataset_v1.2_Aligned_Version` now. If the original dataset is unzipped in a different location, then change the `DATA_PATH` variable in line 13 of `data_utils/collect_downsample.py`.
 3. Run the dataset processing script. This script will collect each room from the original dataset, append label index, downsample it, format it as XYZRGBL and store it as `.npy` files. The processed `.npy` files will be stored inside `data/stanford_indoor3d_downsampled`.
 ```shell
 cd data_utils
 python collect_downsample.py 
 ```
-This step need not be repeated again as long as the `.npy` are stored in the correct folder. Both the test and train scripts use these `.npy` files as input. Currently this script randomly samples 50% of the original pointcloud to downsample it. If you want to change it then change the variable `sampling_ratio` in line 95 of `data_utils/collect_downsample.py`.
+This step need not be repeated again as long as the `.npy` are stored in the correct folder. Both the test and train scripts use these `.npy` files as input. Currently this script randomly samples 30% of the original pointcloud to downsample it. If you want to change it then change the variable `sampling_ratio` in line 95 of `data_utils/collect_downsample.py`.
 
 ## Training 
 Pre-trained model is available `log/sem_seg/pointnet2_sem_seg/checkpoints/best_model.pth`. However, if model needs to be trained on S3DIS dataset then run the train script. Make sure you have followed the data preparation steps in the previous section. From root directory of PointNet2 i.e., `LiDAR_Semantic_Segmentation/PointNet2`, run the train script.
@@ -70,3 +70,26 @@ It is recommended to use a smaller batch size if training on laptop. If the trai
 
 ## Testing
 Trained models are available inside `log/semseg`. 
+
+## Data preparation for LiDAR-Net dataset
+1. Make sure you are in the root directory of PointNet2 i.e., `LiDAR_Semantic_Segmentation/PointNet2`. Create the following directory to store original dataset and processed dataset. 
+```shell
+mkdir data/
+mkdir data/lidarnet_downsampled
+```
+2. Download the `Working Scenes` data from [here](http://lidar-net.njumeta.com/index.php/download/).
+3. Unzip and store it inside `data/`. The directory structure should be `data/working` now. If the original dataset is unzipped in a different location, then change the `DATA_PATH` variable in line 10 of `data_utils/collect_lidarnet.py`.
+3. Run the dataset processing script. This script will downsample and store the dataset as `.npy` in XYZRGBL format. The processed `.npy` files will be stored inside `data/lidarnet_downsampled`.
+```shell
+cd data_utils
+python collect_lidarnet.py 
+```
+This script can take ~40 minutes to finish as the LiDAR-Net dataset is big. This step need not be repeated again as long as the `.npy` are stored in the correct folder. Both the test and train scripts use these `.npy` files as input. Currently this script randomly samples 10% of the original pointcloud to downsample it. If you want to change it then change the variable `sampling_ratio` in line 83 of `data_utils/collect_lidarnet.py`.
+
+## Train using LiDAR-Net
+Pre-trained model is available `log/sem_seg/pointnet2_sem_seg_lidarnet/checkpoints/best_model.pth`. However, if model needs to be trained on S3DIS dataset then run the train script. Make sure you have followed the data preparation steps in the previous section. From root directory of PointNet2 i.e., `LiDAR_Semantic_Segmentation/PointNet2`, run the train script.
+
+```shell
+python train_semseg_lidarnet.py --model pointnet2_sem_seg --batch_size 32 --epoch 32
+```
+It is recommended to use a smaller batch size if training on laptop. If the train script stops running with a "Killed" message then most likely it means it ran out of RAM memory, so reduce batch size in this case.
