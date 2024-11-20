@@ -19,29 +19,15 @@ def main():
     # Load npy file and extract XYZRGB
     data = np.load("test_data/lab_corridor.npy")
 
-    # # Save as .txt
-    # data[:,3:6] = data[:,3:6] * 255
-    # fout = open('test_data/lab_corridor_4.txt', 'w')
-    # for i in range(data.shape[0]):
-    #     fout.write('%f %f %f %f %f %f\n' % \
-    #                 (data[i,0], data[i,1], data[i,2],
-    #                 data[i,3], data[i,4], data[i,5]))
-    # fout.close()
-
-
-    # Pre-process it using  __getitem__(self, index) of S3DISDataLoader.py
-        # Input is X+Y+Z+R+G+B
-        # Output is X+Y+Z+R+G+B+nX+nY+nZ
-
     print(data.shape)
     
-    # data = get_plane(data)
-    # print(data.shape)
-    np.save('lab_corridor_processed.npy', data)
+    data = get_plane(data)
+    print(data.shape)
+    np.save('test_data/lab_corridor_processed.npy', data)
 
     data_room, index_room = prepare_data(data, block_points=4096)
-    np.save("scene_data.npy", data_room)
-    np.save("scene_point_index.npy", index_room)
+    np.save("test_data/scene_data.npy", data_room)
+    np.save("test_data/scene_point_index.npy", index_room)
     print(data_room.shape)
     print(index_room.shape)
 

@@ -1,7 +1,3 @@
-"""
-Author: Benny
-Date: Nov 2019
-"""
 import argparse
 import os
 from data_utils.S3DISDataLoader import ScannetDatasetWholeScene
@@ -21,8 +17,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
-           'board', 'clutter']
+# classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
+#            'board', 'clutter']
+
+classes = ['wall', 'door', 'clutter']
+
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -76,7 +75,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 4
+    NUM_CLASSES = 3
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
@@ -94,9 +93,9 @@ def main(args):
     with torch.no_grad():
         log_string('---- EVALUATION WHOLE SCENE----')
 
-        scene_data = np.load('scene_data.npy')
-        scene_point_index = np.load('scene_point_index.npy')
-        whole_scene_data = np.load('lab_corridor_processed.npy')
+        scene_data = np.load('test_data/scene_data.npy')
+        scene_point_index = np.load('test_data/scene_point_index.npy')
+        whole_scene_data = np.load('test_data/lab_corridor_processed.npy')
 
         print("scene_data = ", scene_data.shape)
         print("scene_point_index = ", scene_point_index.shape)
@@ -140,7 +139,7 @@ def main(args):
             print("pred_label = ", pred_label.shape)
             print("Time %.3f sec.\n" % (time.time() - start))
 
-        name = 'lab_1_ransac'
+        name = 'lab_corridor_ransac'
 
         if args.visual:
             fout = open(os.path.join(visual_dir, name + '_pred.txt'), 'w')

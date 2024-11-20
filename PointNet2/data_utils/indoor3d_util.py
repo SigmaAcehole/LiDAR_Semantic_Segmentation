@@ -10,7 +10,7 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 
 DATA_PATH = os.path.join(ROOT_DIR, 'data','s3dis', 'Stanford3dDataset_v1.2_Aligned_Version')
-g_classes = [x.rstrip() for x in open(os.path.join(BASE_DIR, 'meta/class_names.txt'))]
+g_classes = [x.rstrip() for x in open(os.path.join(BASE_DIR, 'meta/new_class_names.txt'))]
 g_class2label = {cls: i for i,cls in enumerate(g_classes)}
 # g_class2color = {'ceiling':	[0,255,0],
 #                  'floor':	[0,0,255],
@@ -26,22 +26,8 @@ g_class2label = {cls: i for i,cls in enumerate(g_classes)}
 #                  'board':       [200,200,200],
 #                  'clutter':     [50,50,50]} 
 
-# g_class2color = {'ceiling':	[0,0,0],
-#                  'floor':	[0,0,0],
-#                  'wall':	[0,255,0],  # Green
-#                  'beam':        [0,0,0],
-#                  'column':      [0,0,0],
-#                  'window':      [255,0,0],  # Red
-#                  'door':        [0,0,255],  # Blue
-#                  'table':       [0,0,0],
-#                  'chair':       [0,0,0],
-#                  'sofa':        [0,0,0],
-#                  'bookcase':    [0,0,0],
-#                  'board':       [0,0,0],
-#                  'clutter':     [0,0,0]} 
-
 g_class2color = {'wall':	[0,255,0],  # Green
-                 'window':      [255,0,0],  # Red
+                #  'window':      [255,0,0],  # Red
                  'door':        [0,0,255],  # Blue
                  'clutter':     [0,0,0]}    # Black
 
