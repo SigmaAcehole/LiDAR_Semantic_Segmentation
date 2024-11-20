@@ -41,8 +41,8 @@ conda activate pointnet2
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 conda install tqdm
 conda install conda-forge::open3d
+conda install conda-forge::plyfile
 ```
-If any other package needs to be installed (ex: numpy), install it using conda. If package is not available in conda then use pip.
 
 
 ## Data preparation for Stanford 3D Indoor Scenes dataset

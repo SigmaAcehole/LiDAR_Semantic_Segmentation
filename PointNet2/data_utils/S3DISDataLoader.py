@@ -138,8 +138,6 @@ class ScannetDatasetWholeScene():
         coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
         grid_x = int(np.ceil(float(coord_max[0] - coord_min[0] - self.block_size) / self.stride) + 1)
         grid_y = int(np.ceil(float(coord_max[1] - coord_min[1] - self.block_size) / self.stride) + 1)
-        # print("grid_x = ", grid_x)
-        # print("grid_y = ", grid_y)
         data_room, label_room, sample_weight, index_room = np.array([]), np.array([]), np.array([]),  np.array([])
         for index_y in range(0, grid_y):
             for index_x in range(0, grid_x):
@@ -175,14 +173,9 @@ class ScannetDatasetWholeScene():
                 data_room = np.vstack([data_room, data_batch]) if data_room.size else data_batch
                 label_room = np.hstack([label_room, label_batch]) if label_room.size else label_batch
                 sample_weight = np.hstack([sample_weight, batch_weight]) if label_room.size else batch_weight
-                index_room = np.hstack([index_room, point_idxs]) if index_room.size else point_idxs
-        # print("data_room = ", data_room.shape)  
-        # print("label_room = ", label_room.shape)      
+                index_room = np.hstack([index_room, point_idxs]) if index_room.size else point_idxs     
         data_room = data_room.reshape((-1, self.block_points, data_room.shape[1]))
         label_room = label_room.reshape((-1, self.block_points))
-        # print("data_room = ", data_room.shape)  
-        # print("label_room = ", label_room.shape)
-        # print("label_room = ", label_room.flatten().shape)
         sample_weight = sample_weight.reshape((-1, self.block_points))
         index_room = index_room.reshape((-1, self.block_points))
         return data_room, label_room, sample_weight, index_room

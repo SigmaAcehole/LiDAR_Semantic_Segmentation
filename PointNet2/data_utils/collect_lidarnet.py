@@ -3,46 +3,41 @@ import sys
 import glob
 import open3d as o3d
 import numpy as np
+from plyfile import PlyData
+
 
 def main():
+    DATA_PATH = '../../../PointNet2/lidarnet/working/'
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(BASE_DIR)
-
-    # Manually set the path to original dataset
-    # DATA_PATH = '../../../PointNet2/s3dis/Stanford3dDataset_v1.2_Aligned_Version/'
-    DATA_PATH = '/mnt/datasets/Eshan/Stanford3dDataset_v1.2_Aligned_Version'
-
-    anno_paths = [line.rstrip() for line in open(os.path.join(BASE_DIR, 'meta/anno_paths.txt'))]
-    anno_paths = [os.path.join(DATA_PATH, p) for p in anno_paths]
-
-    output_folder = '../data/stanford_indoor3d_downsampled'
+    # Store all file names in a list
+    ply_files = []
+    for file in os.listdir(DATA_PATH):
+        if file.endswith(".ply"):
+            ply_files.append(file[:-4])  # Remove the .ply extension
+    
+    output_folder = '../data/lidarnet_downsampled'
 
     # Check if output folder was created
     if not os.path.exists(output_folder):
         error_string = "Directory " + str(output_folder) + " does not exist, please create it!"
         raise ValueError(error_string)
-    
 
-    # Note: there is an extra character in the v1.2 data in Area_5/hallway_6. It's fixed manually.
-    for anno_path in anno_paths:
-        print(anno_path)
+    for file_name in ply_files:
+        print(file_name)
         try:
-            elements = anno_path.split('/')
-            out_filename = elements[-3]+'_'+elements[-2]+'.npy' # Ex: Area_1_hallway_1.npy
-            collect_point_label(anno_path, os.path.join(output_folder, out_filename), 'numpy')
+            file_path = DATA_PATH + file_name + '.ply'
+            out_filename = file_name + '.npy'   # Ex: baiyin_room07_part_01.npy
+            collect_point_label(file_path, os.path.join(output_folder, out_filename), 'numpy')
         except:
-            print(anno_path, 'ERROR!!')
+            print(file_path, 'ERROR!!')
 
     print("Finished preparing dataset!")
-    
 
-def collect_point_label(anno_path, out_filename, file_format='txt'):
+
+def collect_point_label(file_path, out_filename, file_format='txt'):
     """ Convert original dataset files to data_label file (each line is XYZRGBL).
-        We aggregated all the points from each instance in the room.
-
     Args:
-        anno_path: path to annotations. e.g. Area_1/office_2/Annotations/
+        file_path: path to .ply file
         out_filename: path to save collected points and labels (each line is XYZRGBL)
         file_format: txt or numpy, determines what file format to save.
     Returns:
@@ -50,24 +45,9 @@ def collect_point_label(anno_path, out_filename, file_format='txt'):
     Note:
         the points are shifted before save, the most negative point is now at origin.
     """
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    g_classes = [x.rstrip() for x in open(os.path.join(BASE_DIR, 'meta/class_names.txt'))]
-    g_class2label = {cls: i for i,cls in enumerate(g_classes)}
-
-    points_list = []
-    for f in glob.glob(os.path.join(anno_path, '*.txt')):
-        cls = os.path.basename(f).split('_')[0]
-        print(f)
-        if cls not in g_classes: # note: in some room there is 'stairs' class..
-            cls = 'clutter'
-
-        points = np.loadtxt(f)
-        labels = np.ones((points.shape[0],1)) * g_class2label[cls]
-        points_list.append(np.concatenate([points, labels], 1)) # Nx7
-    
-    data_label = np.concatenate(points_list, 0)
+    data_label = read_ply_as_numpy(file_path)
     xyz_min = np.amin(data_label, axis=0)[0:3]
-    data_label[:, 0:3] -= xyz_min
+    data_label[:, 0:3] -= xyz_min   # Shift most negative point to origin
 
     # Downsample the pointcloud
     data_label = down_sample(data_label)
@@ -99,13 +79,29 @@ def down_sample(data):
     pc.points = o3d.utility.Vector3dVector(data[:,:3])
     pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
     pc.normals = o3d.utility.Vector3dVector(labels)   # Storing labels as normals as open3d PointCloud() has no labels
-    sampling_ratio = 0.3    # no. of sampled points/total no. of points. To sample all points keep it as 1.
+    sampling_ratio = 0.1    # no. of sampled points/total no. of points. To sample all points keep it as 1.
     pc_down = pc.random_down_sample(sampling_ratio)
     points = np.asarray(pc_down.points)
     colors = np.asarray(pc_down.colors)
     labels = np.asarray(pc_down.normals)
     data = np.hstack((points,colors,labels))[:,:7]      # Back to XYZRGBL format
     return data
+
+def read_ply_as_numpy(ply_file_path):
+  """Reads a .ply file and returns its data as a NumPy array.
+  Args:
+    ply_file_path: Path to the .ply file.
+  Returns:
+    A NumPy array containing the data from the .ply file.
+  """
+  plydata = PlyData.read(ply_file_path)
+  data = plydata['vertex'].data
+  # Extract relevant data (X Y Z R G B L)
+  x, y, z, r, g, b, l = data['x'], data['y'], data['z'], data['red'], data['green'], data['blue'], data['sem']
+  # Create a NumPy array
+  point_cloud = np.array([x, y, z, r, g, b, l]).transpose()
+
+  return point_cloud
 
 if __name__ == '__main__':
     main()
