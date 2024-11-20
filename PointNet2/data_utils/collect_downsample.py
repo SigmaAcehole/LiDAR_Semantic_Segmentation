@@ -10,7 +10,8 @@ def main():
     sys.path.append(BASE_DIR)
 
     # Manually set the path to original dataset
-    DATA_PATH = '../../../PointNet2/s3dis/Stanford3dDataset_v1.2_Aligned_Version/'
+    # DATA_PATH = '../../../PointNet2/s3dis/Stanford3dDataset_v1.2_Aligned_Version/'
+    DATA_PATH = '/mnt/datasets/Eshan/Stanford3dDataset_v1.2_Aligned_Version'
 
     anno_paths = [line.rstrip() for line in open(os.path.join(BASE_DIR, 'meta/anno_paths.txt'))]
     anno_paths = [os.path.join(DATA_PATH, p) for p in anno_paths]
@@ -92,7 +93,7 @@ def down_sample(data):
     pc.points = o3d.utility.Vector3dVector(data[:,:3])
     pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
     pc.normals = o3d.utility.Vector3dVector(labels)   # Storing labels as normals as open3d PointCloud() has no labels
-    sampling_ratio = 0.5    # no. of sampled points/total no. of points. To sample all points keep it as 1.
+    sampling_ratio = 0.3    # no. of sampled points/total no. of points. To sample all points keep it as 1.
     pc_down = pc.random_down_sample(sampling_ratio)
     points = np.asarray(pc_down.points)
     colors = np.asarray(pc_down.colors)

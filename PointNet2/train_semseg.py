@@ -26,11 +26,10 @@ sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
 # New classes
 ''' wall = 0
-    window = 1
-    door = 2
-    clutter = 3
+    door = 1
+    clutter = 2
 '''
-classes = ['wall', 'window', 'door', 'clutter']
+classes = ['wall', 'door', 'clutter']
 
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
@@ -97,9 +96,9 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = '/data/stanford_indoor3d_downsampled/'
+    root = 'data/stanford_indoor3d_downsampled/'
     
-    NUM_CLASSES = 4 #13
+    NUM_CLASSES = 3 #13
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 

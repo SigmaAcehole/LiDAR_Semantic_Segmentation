@@ -21,7 +21,7 @@ class S3DISDataset(Dataset):
         self.room_points, self.room_labels = [], []
         self.room_coord_min, self.room_coord_max = [], []
         num_point_all = []
-        labelweights = np.zeros(4)
+        labelweights = np.zeros(3)      # number of classes
 
         for room_name in tqdm(rooms_split, total=len(rooms_split)):
             room_path = os.path.join(data_root, room_name)
@@ -32,14 +32,14 @@ class S3DISDataset(Dataset):
             for label in range(len(labels)):
                 if(labels[label] == 2):
                     labels[label] = 0   # Wall
-                elif(labels[label] == 5):
-                    labels[label] = 1   # Window
+                # elif(labels[label] == 5):
+                #     labels[label] = 1   # Window
                 elif(labels[label] == 6):
-                    labels[label] = 2   # Door
+                    labels[label] = 1   # Door
                 else:
-                    labels[label] = 3   # Everything else is clutter
+                    labels[label] = 2   # Everything else is clutter
 
-            tmp, _ = np.histogram(labels, range(5))
+            tmp, _ = np.histogram(labels, range(4))     # number of classes + 1
             labelweights += tmp
             coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
             self.room_points.append(points), self.room_labels.append(labels)
