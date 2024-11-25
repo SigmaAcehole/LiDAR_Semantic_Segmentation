@@ -24,6 +24,65 @@ def main():
     #             data_cluster[i, 5]))
     # fout.close() 
 
+def segment_doors(data):
+    intensity = np.array([data[:,6], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
+    
+    pc = o3d.geometry.PointCloud()
+    pc.points = o3d.utility.Vector3dVector(data[:,:3])
+    pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
+    pc.normals = o3d.utility.Vector3dVector(intensity)
+    
+    # pc = o3d.t.geometry.PointCloud()
+    # dtype = o3d.core.float32
+    # pc.point.positions = o3d.core.Tensor(data[:,:3], dtype)
+    # pc.point.colors = o3d.core.Tensor(data[:,3:6], dtype)
+    # pc.point.normals = o3d.core.Tensor(intensity, dtype)
+
+    # Segment wall plane using RANSAC
+    pc_ransac = get_plane(pc)
+
+    # Cluster using DBSCAN
+    pc_cluster, labels = compute_cluster(pc_ransac)
+
+    # Calculate average intensity of each cluster
+    avg_intensity_list = []
+    door_center = [[]]
+    num_clusters = max(labels) + 1
+    new_colors = np.zeros((len(pc_cluster.points),3))
+
+
+    for i in range(num_clusters):
+        ind = np.where(labels == i)[0]
+        cluster = pc_cluster.select_by_index(ind)
+        avg_intensity = np.average(np.asarray(cluster.normals)[:,0])
+        avg_intensity_list.append(avg_intensity)
+
+        # print("Cluster ", i)
+        # print(" Points = %d" % (len(ind)))
+        # print(" Intensity= %f" % (avg_intensity))
+
+        # Get center of door pointcloud and highlight doors with red
+        if(avg_intensity < 40):
+            (x,y,z) = cluster.get_center()
+            door_center.append([x,y,z])
+            new_colors[ind,:] = (255,0,0)
+
+        # Detect boundary of cluster
+        locate_opening(cluster)
+            
+    pc_cluster.colors = o3d.utility.Vector3dVector(new_colors)
+    data_segmented = np.hstack([np.asarray(pc_cluster.points), np.asarray(pc_cluster.colors)])
+
+    return data_segmented, door_center
+
+def locate_opening(pc):
+    aabb = pc.get_axis_aligned_bounding_box()
+    print("Bounding box: ")
+    print(aabb.get_max_bound())
+    print(aabb.get_min_bound())
+    print(aabb.get_max_bound() - aabb.get_min_bound())
+
+
 def compute_cluster(pc):
     # Downsample
     pc = pc.uniform_down_sample(3)
@@ -40,7 +99,6 @@ def compute_cluster(pc):
 
     return pc, labels
     
-
 def get_plane(pc):
     # Plane segmentation using RANSAC
     _, inliers = pc.segment_plane(distance_threshold=0.1, ransac_n=3, num_iterations=5000, probability=0.9999)
@@ -49,61 +107,11 @@ def get_plane(pc):
     _, inliers2 = outlier_cloud.segment_plane(distance_threshold=0.1, ransac_n=3, num_iterations=5000, probability=0.9999)
     inlier_cloud2 = outlier_cloud.select_by_index(inliers2)
     pc_ransac = copy.deepcopy(inlier_cloud)
-    pc_ransac.point.positions.extend(inlier_cloud2.point.positions)
-    pc_ransac.point.colors.extend(inlier_cloud2.point.colors)
-    pc_ransac.point.normals.extend(inlier_cloud2.point.normals)
+    pc_ransac.points.extend(inlier_cloud2.points)
+    pc_ransac.colors.extend(inlier_cloud2.colors)
+    pc_ransac.normals.extend(inlier_cloud2.normals)
 
     return pc_ransac
-
-def segment_doors(data):
-    dtype = o3d.core.float32
-    pc = o3d.t.geometry.PointCloud()
-    intensity = np.array([data[:,6], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
-    # pc.point.positions = o3d.utility.Vector3dVector(data[:,:3])
-    # pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
-    # pc.normals = o3d.utility.Vector3dVector(intensity)
-    pc.point.positions = o3d.core.Tensor(data[:,:3], dtype)
-    pc.point.colors = o3d.core.Tensor(data[:,3:6], dtype)
-    pc.point.normals = o3d.core.Tensor(intensity, dtype)
-
-    # Segment wall plane using RANSAC
-    pc_ransac = get_plane(pc)
-
-    # Cluster using DBSCAN
-    pc_cluster, labels = compute_cluster(pc_ransac)
-
-    # Calculate average intensity of each cluster
-    avg_intensity_list = []
-    door_center = [[]]
-    num_clusters = max(labels) + 1
-    new_colors = np.zeros((len(pc_cluster.points),3))
-
-    for i in range(num_clusters):
-        ind = np.where(labels == i)[0]
-        cluster = pc_cluster.select_by_index(ind)
-        avg_intensity = np.average(np.asarray(cluster.normals)[:,0])
-        avg_intensity_list.append(avg_intensity)
-
-        print("Cluster ", i)
-        print(" Points = %d" % (len(ind)))
-        print(" Intensity= %f" % (avg_intensity))
-
-        # Get center of door pointcloud and highlight doors with red
-        if(avg_intensity < 40):
-            (x,y,z) = cluster.get_center()
-            door_center.append([x,y,z])
-            new_colors[ind,:] = (255,0,0)
-
-        # Detect boundary of cluster
-        boundarys, mask = cluster.compute_boundary_points(0.02, 30)
-        boundarys = boundarys.paint_uniform_color([1.0, 0.0, 0.0])
-        print("Boundary = ", len(boundarys.points))
-        print("Mask = ", len(mask))
-            
-    pc_cluster.colors = o3d.utility.Vector3dVector(new_colors)
-    data_segmented = np.hstack([np.asarray(pc_cluster.points), np.asarray(pc_cluster.colors)])
-
-    return data_segmented, door_center
     
 
 if __name__ == '__main__':
