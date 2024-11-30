@@ -36,6 +36,9 @@ def prepare_data(points, block_points=4096):
     block_size=1.0
     padding=0.001
 
+    xyz_min = np.amin(points, axis=0)[0:3]
+    points[:, 0:3] -= xyz_min
+
     coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
     grid_x = int(np.ceil(float(coord_max[0] - coord_min[0] - block_size) / stride) + 1)
     grid_y = int(np.ceil(float(coord_max[1] - coord_min[1] - block_size) / stride) + 1)
