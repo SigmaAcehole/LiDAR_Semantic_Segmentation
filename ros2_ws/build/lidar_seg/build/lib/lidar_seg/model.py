@@ -39,7 +39,13 @@ class Model(Node):
     def listener_callback(self, msg):
         if(self.scan_num < 1):
             cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'r', 'g', 'b', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array
-            np.save('lab_corridor_2.npy', cloud)
+            np.save('lab_corridor_6.npy', cloud)
+            fout = open("lab_corridor_6.txt", 'w')
+            for i in range(cloud.shape[0]):
+                    fout.write('%f %f %f %d %d %d %d\n' % (
+                        cloud[i, 0], cloud[i, 1], cloud[i, 2], cloud[i, 3], cloud[i, 4],
+                        cloud[i, 5], cloud[i, 6]))
+            fout.close() 
             print(cloud.shape)
             self.scan_num +=1
         
