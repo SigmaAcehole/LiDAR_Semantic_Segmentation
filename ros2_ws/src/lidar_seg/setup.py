@@ -22,7 +22,8 @@ setup(
         'console_scripts': [
             'preproc = lidar_seg.preproc:main',
             'listener_test = lidar_seg.listener_test:main',
-            'model = lidar_seg.model:main'
+            'model = lidar_seg.model:main',
+            'cluster = lidar_seg.cluster:main'
         ],
     },
 )
