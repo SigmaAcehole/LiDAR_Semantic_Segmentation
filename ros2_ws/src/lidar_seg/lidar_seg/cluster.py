@@ -22,7 +22,7 @@ class Cluster(Node):
         # Subscriber
         self.subscription = self.create_subscription(
             PointCloud2,    # Msg type
-            '/xyz_rgb',                      # topic
+            '/velodyne_points',                      # topic
             self.listener_callback,      # Function to call
             10                          # QoS
         )
@@ -47,7 +47,7 @@ class Cluster(Node):
 
     # Callback for subscriber
     def listener_callback(self, msg):
-        self.cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'r', 'g', 'b', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array 
+        self.cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array 
         door_threshold = 40
         data_cluster, door_center, opening_center, bounding_box_door, bounding_box_opening = segment_doors_opening(self.cloud, door_threshold)
         print("Number of doors: ", len(door_center))
@@ -73,16 +73,17 @@ class Cluster(Node):
             self.vis.add_geometry(bounding_box_door[i])
         for j in range(len(bounding_box_opening)):
             self.vis.add_geometry(bounding_box_opening[j])   
-        self.vis.get_render_option().point_size = 1
+        self.vis.get_render_option().point_size = 2
+        self.vis.get_render_option().light_on = False
+        self.vis.get_view_control().set_zoom(0.3)
         self.vis.poll_events()
         self.vis.update_renderer()
 
 def segment_doors_opening(data, door_threshold):
     # Convert numpy array to Open3d point cloud
-    intensity = np.array([data[:,6], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
+    intensity = np.array([data[:,3], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(data[:,:3])
-    pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
     pc.normals = o3d.utility.Vector3dVector(intensity)  # intensity is stored in first column of normals, rest two columns are dummy
     
     # Segment wall plane using RANSAC
@@ -96,9 +97,9 @@ def segment_doors_opening(data, door_threshold):
     bounding_box_all = []               # Bounding box for each cluster, used to locate openings 
     bounding_box_door = []              # Bounding box on located door
     bounding_box_opening = []           # Bounding box on located opening
-    door_center = []                  # Door's center coordinate (x,y,z)
-    opening_center = []               # Opening's center coordinate (x,y,z)
-    door_num_points = 1000              # Minimum number of points to be considered a door (to reduce false cases)
+    door_center = []                    # Door's center coordinate (x,y,z)
+    opening_center = []                 # Opening's center coordinate (x,y,z)
+    door_num_points = 500               # Minimum number of points to be considered a door (to reduce false cases)
     plane_threshold = 0.1               # Maximum distance between a point and a plane to be considered within the plane   
 
     plane1_dict, plane2_dict = {}, {}   # Empty dictionary, Key : Value => bounding box : x_center/y_center               
@@ -214,10 +215,9 @@ def compute_cluster(pc):
     # Downsample
     pc = pc.uniform_down_sample(2)
     # Cluster using DBSCAN
-    labels = pc.cluster_dbscan(eps=0.35, min_points=500, print_progress=False)
+    labels = pc.cluster_dbscan(eps=0.35, min_points=100, print_progress=False)
     labels = np.asarray(labels)
     max_label = max(labels)
-    print(f"point cloud has {max_label + 1} clusters")
     colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
     colors = np.asarray(colors[:,:3])   # RGB range 0 - 255
     colors[labels < 0] = 0  # Points that couldn't be clustered have label value -1 so make their color black
@@ -233,10 +233,16 @@ def get_plane(pc):
     # Extract second plane using RANSAC
     [a2,b2,c2,d2], inliers2 = outlier_cloud.segment_plane(distance_threshold=distance_threshold, ransac_n=3, num_iterations=5000, probability=0.9999)
     inlier_cloud2 = outlier_cloud.select_by_index(inliers2)
-    pc_ransac = copy.deepcopy(inlier_cloud1)
-    pc_ransac.points.extend(inlier_cloud2.points)
-    pc_ransac.colors.extend(inlier_cloud2.colors)
-    pc_ransac.normals.extend(inlier_cloud2.normals)
+    if(c1 < 0.5 and c2 < 0.5):
+        pc_ransac = copy.deepcopy(inlier_cloud1)
+        pc_ransac.points.extend(inlier_cloud2.points)
+        pc_ransac.normals.extend(inlier_cloud2.normals)
+    elif(c1 < 0.5 and c2 >= 0.5):
+        pc_ransac = copy.deepcopy(inlier_cloud1)
+        a2,b2,c2,d2 = 0,0,1,9999
+    else:
+        pc_ransac = copy.deepcopy(inlier_cloud2)
+        a1,b1,c1,d1 = 0,0,1,9999 
     return pc_ransac, np.array([a1,b1,c1,d1,a2,b2,c2,d2])
 
 """
