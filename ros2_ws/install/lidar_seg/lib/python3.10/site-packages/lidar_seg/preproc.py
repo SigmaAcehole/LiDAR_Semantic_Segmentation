@@ -31,7 +31,7 @@ class PreProc(Node):
 
         # Publisher
         self.publisher_ = self.create_publisher(PointCloud2, 'xyz_rgb', 10)
-        timer_period = 1/10  # seconds
+        timer_period = 1/20  # seconds
         self.timer = self.create_timer(timer_period, self.publisher_callback) 
 
         # Initializing parameters and objects for moving window point cloud registration
@@ -89,14 +89,12 @@ class PreProc(Node):
                 self.window.append(len(points))
                 if(self.global_trans_done == False):
                     self.trans_init = fast_global_registration(self.source, self.target, self.voxel_size)
-                    self.global_trans_done = True
+                    self.global_trans_done = False
                 transformation_matrix = icp_transformation(self.source, self.target, self.trans_init, self.threshold_icp)
                 self.pc.transform(transformation_matrix)
                 self.pc.points.extend(self.target.points)
                 self.pc.colors.extend(o3d.utility.Vector3dVector(colors))
-                print("Before: ", self.intensity.shape)
                 self.intensity = np.vstack((self.intensity, cloud[:,3].reshape((len(points),1))))
-                print("After: ", self.intensity.shape)
                 self.source.points = self.target.points
         # Update the moving window
         else:
@@ -109,7 +107,7 @@ class PreProc(Node):
             self.window.append(len(points))
             if(self.global_trans_done == False):
                 self.trans_init = fast_global_registration(self.source, self.target, self.voxel_size)
-                self.global_trans_done = True
+                self.global_trans_done = False
             transformation_matrix = icp_transformation(self.source, self.target, self.trans_init, self.threshold_icp)
             self.pc.transform(transformation_matrix)
             self.pc.points.extend(self.target.points)
@@ -133,7 +131,6 @@ class PreProc(Node):
                 ]
 
         print("Scan no.: ", self.scan_num)
-        print("Window:", self.window)
         print("Intensity shape: ", self.intensity.shape)
         # Publisher after moving window created
         if(self.scan_num >= self.window_size):       

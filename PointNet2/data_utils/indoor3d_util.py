@@ -38,7 +38,7 @@ g_class2color = {'ceiling':	[0,0,0],
                  'sofa':        [0,0,0],
                  'bookcase':    [0,0,0],
                  'board':       [0,0,0],
-                 'clutter':     [255,255,255]} 
+                 'clutter':     [0,0,0]} 
 
 # g_class2color = {'wall':	[0,255,0],  # Green
 #                  'window':      [255,0,0],  # Red

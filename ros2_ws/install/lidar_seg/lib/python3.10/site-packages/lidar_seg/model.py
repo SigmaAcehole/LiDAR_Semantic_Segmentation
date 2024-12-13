@@ -20,7 +20,7 @@ class Model(Node):
         # Subscriber
         self.subscription = self.create_subscription(
             PointCloud2,    # Msg type
-            '/xyz_rgb',                      # topic
+            '/velodyne_points',                      # topic
             self.listener_callback,      # Function to call
             10                          # QoS
         )
@@ -38,14 +38,8 @@ class Model(Node):
     # Callback for subscriber
     def listener_callback(self, msg):
         if(self.scan_num < 1):
-            cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'r', 'g', 'b', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array
-            np.save('lab_corridor_6.npy', cloud)
-            fout = open("lab_corridor_6.txt", 'w')
-            for i in range(cloud.shape[0]):
-                    fout.write('%f %f %f %d %d %d %d\n' % (
-                        cloud[i, 0], cloud[i, 1], cloud[i, 2], cloud[i, 3], cloud[i, 4],
-                        cloud[i, 5], cloud[i, 6]))
-            fout.close() 
+            cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array
+            np.save('test_data_5.npy', cloud)
             print(cloud.shape)
             self.scan_num +=1
         
