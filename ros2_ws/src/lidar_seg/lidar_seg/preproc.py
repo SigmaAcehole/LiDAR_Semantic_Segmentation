@@ -130,8 +130,6 @@ class PreProc(Node):
                 PointField(name = 'intensity', offset = 24, datatype = 7, count = 1,)
                 ]
 
-        print("Scan no.: ", self.scan_num)
-        print("Intensity shape: ", self.intensity.shape)
         # Publisher after moving window created
         if(self.scan_num >= self.window_size):       
             pointcloud_msg = point_cloud2.create_cloud(header, fields, np.concatenate((np.asarray(self.pc.points),np.asarray(self.pc.colors),self.intensity),axis=1))

@@ -13,11 +13,13 @@ from std_msgs.msg import Header
 import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
+from geometry_msgs.msg import PointStamped
 
 class Cluster(Node):
 
     def __init__(self):
         super().__init__('cluster')
+        self.declare_parameter('visual', 0) # setting to 1 will display Open3D visualization
 
         # Subscriber
         self.subscription = self.create_subscription(
@@ -30,56 +32,86 @@ class Cluster(Node):
         self.cloud = np.array([])
         self.subscription
 
-        self.vis = o3d.visualization.Visualizer()
-        self.vis.create_window()
-        self.o3d_pcd = o3d.geometry.PointCloud()
-        # self.o3d_pcd.points = o3d.utility.Vector3dVector(np.array([0,0,0]))
-        # self.o3d_pcd.colors = [0,0,0]
-        # self.vis.add_geometry(self.o3d_pcd)
+        if(self.get_parameter('visual').value == 1):
+            self.vis = o3d.visualization.Visualizer()
+            self.vis.create_window()
+            self.o3d_pcd = o3d.geometry.PointCloud()
 
-        # # Publisher
-        # self.publisher_ = self.create_publisher(PointCloud2, 'xyz_rgb', 10)
-        # timer_period = 4  # seconds
-        # self.timer = self.create_timer(timer_period, self.publisher_callback) 
+        # Publisher for door
+        self.publisher_door_ = self.create_publisher(PointCloud2, '/door', 10)
+        timer_period = 1/20 
+        self.timer = self.create_timer(timer_period, self.publisher_callback_door) 
 
+        # Publisher for opening
+        self.publisher_opening_ = self.create_publisher(PointCloud2, '/opening', 10)
+        timer_period = 1/20
+        self.timer = self.create_timer(timer_period, self.publisher_callback_opening)
 
+        self.bounding_box_door = []
+        self.bounding_box_opening = []
         
 
     # Callback for subscriber
     def listener_callback(self, msg):
         self.cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array 
         door_threshold = 40
-        data_cluster, door_center, opening_center, bounding_box_door, bounding_box_opening = segment_doors_opening(self.cloud, door_threshold)
-        print("Number of doors: ", len(door_center))
-        print("Number of openings: ", len(opening_center)) 
-        print("Point Cloud :", data_cluster.shape)
+        self.bounding_box_door, self.bounding_box_opening = segment_doors_opening(self.cloud, door_threshold)
+
+        if(self.get_parameter('visual').value == 1):
+            self.vis.clear_geometries()
+            self.o3d_pcd.points = o3d.utility.Vector3dVector(self.cloud[:,:3])
+            self.o3d_pcd.paint_uniform_color([0,0,0])
+            if(self.scan_num == 0):
+                self.vis.add_geometry(self.o3d_pcd)
+            else:
+                self.vis.update_geometry(self.o3d_pcd)
+            for i in range(len(self.bounding_box_door)):
+                self.vis.add_geometry(self.bounding_box_door[i])
+            for j in range(len(self.bounding_box_opening)):
+                self.vis.add_geometry(self.bounding_box_opening[j])   
+            self.vis.get_render_option().point_size = 2
+            self.vis.get_render_option().light_on = False
+            self.vis.get_view_control().set_zoom(0.2)
+            self.vis.get_view_control().change_field_of_view(100)
+            self.vis.poll_events()
+            self.vis.update_renderer()
 
     
-    # def publisher_callback(self):
-    #     door_threshold = 40
-    #     print("Shape = ", self.cloud.shape)
-    #     data_cluster, door_center, opening_center, bounding_box_door, bounding_box_opening = segment_doors_opening(self.cloud, door_threshold)
-    #     print("No. of doors = ", len(door_center))
-    #     print("No. of openings = ", len(opening_center))
+    def publisher_callback_door(self):
+        header = Header()
+        fields =[PointField(name = 'x', offset = 0, datatype = 7, count = 1),
+            PointField(name = 'y', offset = 4, datatype = 7, count = 1),
+            PointField(name = 'z', offset = 8, datatype = 7, count = 1)
+            ]
 
-        self.vis.clear_geometries()
-        self.o3d_pcd.points = o3d.utility.Vector3dVector(data_cluster[:,:3])
-        self.o3d_pcd.colors = o3d.utility.Vector3dVector(data_cluster[:,3:6])
-        if(self.scan_num == 0):
-            self.vis.add_geometry(self.o3d_pcd)
-        else:
-            self.vis.update_geometry(self.o3d_pcd)
-        for i in range(len(bounding_box_door)):
-            self.vis.add_geometry(bounding_box_door[i])
-        for j in range(len(bounding_box_opening)):
-            self.vis.add_geometry(bounding_box_opening[j])   
-        self.vis.get_render_option().point_size = 2
-        self.vis.get_render_option().light_on = False
-        self.vis.get_view_control().set_zoom(0.3)
-        self.vis.get_view_control().change_field_of_view(100)
-        self.vis.poll_events()
-        self.vis.update_renderer()
+        bb_points_all = np.zeros((1,3))
+        if self.bounding_box_door:
+            bb_points_all = np.asarray(self.bounding_box_door[0].get_box_points())
+            for i in range(len(self.bounding_box_door)-1):
+                bb_points_all = np.append(bb_points_all, np.asarray(self.bounding_box_door[i+1].get_box_points()), axis=0)
+            
+        pointcloud_msg = point_cloud2.create_cloud(header, fields, bb_points_all)
+        pointcloud_msg.header.frame_id = "door"
+        self.publisher_door_.publish(pointcloud_msg)
 
+    def publisher_callback_opening(self):
+        header = Header()
+        fields =[PointField(name = 'x', offset = 0, datatype = 7, count = 1),
+            PointField(name = 'y', offset = 4, datatype = 7, count = 1),
+            PointField(name = 'z', offset = 8, datatype = 7, count = 1)
+            ]
+
+        bb_points_all = np.zeros((1,3))
+        if self.bounding_box_opening:
+            bb_points_all = np.asarray(self.bounding_box_opening[0].get_box_points())
+            for i in range(len(self.bounding_box_opening)-1):
+                bb_points_all = np.append(bb_points_all, np.asarray(self.bounding_box_opening[i+1].get_box_points()), axis=0)
+            
+        pointcloud_msg = point_cloud2.create_cloud(header, fields, bb_points_all)
+        pointcloud_msg.header.frame_id = "opening"
+        self.publisher_opening_.publish(pointcloud_msg)
+
+        
 def segment_doors_opening(data, door_threshold):
     # Convert numpy array to Open3d point cloud
     intensity = np.array([data[:,3], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
@@ -93,13 +125,11 @@ def segment_doors_opening(data, door_threshold):
     # Cluster using DBSCAN
     pc_cluster, labels = compute_cluster(pc_ransac)
 
-    # Locate doors and opening
+    # Initialize variables to locate doors and opening
     num_clusters =  max(labels) + 1     # Number of clusters found   
     bounding_box_all = []               # Bounding box for each cluster, used to locate openings 
     bounding_box_door = []              # Bounding box on located door
     bounding_box_opening = []           # Bounding box on located opening
-    door_center = []                    # Door's center coordinate (x,y,z)
-    opening_center = []                 # Opening's center coordinate (x,y,z)
     door_num_points = 500               # Minimum number of points to be considered a door (to reduce false cases)
     plane_threshold = 0.1               # Maximum distance between a point and a plane to be considered within the plane   
 
@@ -109,19 +139,18 @@ def segment_doors_opening(data, door_threshold):
     is_xz_plane1 = True if (plane[1] > plane[0]) else False
     is_xz_plane2 = True if (plane[5] > plane[4]) else False
 
+    # Loop through each cluster
     for i in range(num_clusters):
         ind = np.where(labels == i)[0]
         cluster = pc_cluster.select_by_index(ind)
-        x,y,z = cluster.get_center()
+        x,y,z = cluster.get_center()    # Center of cluster
         bounding_box = rotate_bb_using_eigen(cluster)
         bounding_box.color = [0,1,0]
         # Check whether cluster is in plane 1 or plane 2
         plane1_dist = (np.abs(np.dot(plane[:3],np.array([x,y,z])) + plane[3]))/(np.linalg.norm(plane[:3]))
         if(plane1_dist <= plane_threshold): 
-            # bounding_box = rotate_bb(cluster, rotation_matrix1)
             plane1_dict[bounding_box] =  x if is_xz_plane1 else y
         else:
-            # bounding_box = rotate_bb(cluster, rotation_matrix2)
             plane2_dict[bounding_box] =  x if is_xz_plane2 else y
         bounding_box_all.append(bounding_box)
         # Check and locate door
@@ -130,9 +159,8 @@ def segment_doors_opening(data, door_threshold):
             door_bound = rotate_bb_using_eigen(door_cluster)
             door_bound.color = [1.,0.,0.]
             bounding_box_door.append(door_bound)
-            door_center.append([x,y,z]) 
       
-    # Sort arrangement of clusters inside plane in ascending order based on x_center/y_center value
+    # Sort arrangement of clusters inside plane in ascending order based on x/y center value
     plane1_sorted = [key for key, val in sorted(plane1_dict.items(), key = lambda ele: ele[1])]
     plane2_sorted = [key for key, val in sorted(plane2_dict.items(), key = lambda ele: ele[1])]
 
@@ -145,24 +173,16 @@ def segment_doors_opening(data, door_threshold):
             if(opening_box is not False):
                 opening_box.color = [0., 0., 1.]
                 bounding_box_opening.append(opening_box)
-                opening_center.append(opening_box.get_center())
     if(plane2_len > 1):
         for m in range(len(plane2_sorted)-1):
             opening_box = locate_opening(plane2_sorted[m], plane2_sorted[m+1], is_xz_plane2)
             if(opening_box is not False):
                 opening_box.color = [0., 0., 1.]
                 bounding_box_opening.append(opening_box)
-                opening_center.append(opening_box.get_center())
-    
-    data_segmented = np.hstack([np.asarray(pc_cluster.points), np.asarray(pc_cluster.colors)])
 
-    # axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1, origin=pc.get_center())
-    # o3d.visualization.draw_geometries([pc_cluster, *bounding_box_door, *bounding_box_opening, axis])
-
-    return data_segmented, door_center, opening_center, bounding_box_door, bounding_box_opening
+    return bounding_box_door, bounding_box_opening
 
 def rotate_bb_using_eigen(pc):
-    # print("PC num points = ", len(pc.points))
     obox = pc.get_minimal_oriented_bounding_box()
     obox.color = [1,0,0]
     return obox
@@ -177,9 +197,11 @@ def locate_door(pc, door_threshold):
         for i in range(cloud.shape[0]):
             if(cloud[i,3] > door_threshold/4):
                 mask[i] = False
+        # Extract points from cluster which have intensity lower than threshold
         cloud =  cloud[mask,:]
         door_cloud = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(cloud[:,:3]))
         door_cloud.paint_uniform_color([1.,0.,0.])
+        # Remove outliers
         _, ind = door_cloud.remove_radius_outlier(nb_points=16, radius=0.1)
         inlier_cloud = door_cloud.select_by_index(ind)
         inlier_cloud.paint_uniform_color([0.,0.,1.])
@@ -190,8 +212,8 @@ def locate_opening(box1, box2, is_xz_plane):
     max_bound_1 = box1.get_max_bound()
     min_bound_2 = box2.get_min_bound()
     max_bound_2 = box2.get_max_bound()
-
     if(is_xz_plane):
+        # Check if adjacent bounding boxes are overlapping
         if(min_bound_2[0] < max_bound_1[0]):
             return False
         center = [(max_bound_1[0] + min_bound_2[0])/2, (max_bound_1[1] + min_bound_1[1])/2, (max_bound_1[2] + min_bound_1[2])/2]
@@ -199,13 +221,13 @@ def locate_opening(box1, box2, is_xz_plane):
         height = max_bound_1[2] - min_bound_1[2]
         thick = max_bound_1[1] - min_bound_1[1]
     else:
+        # Check if adjacent bounding boxes are overlapping
         if(min_bound_2[1] < max_bound_1[1]):
             return False
         center = [(max_bound_1[0] + min_bound_1[0])/2, (max_bound_1[1] + min_bound_2[1])/2, (max_bound_1[2] + min_bound_1[2])/2]
         width = max_bound_1[0] - min_bound_1[0]
         height = max_bound_1[2] - min_bound_1[2]
         thick = min_bound_2[1] - max_bound_1[1]
-
     box = o3d.geometry.OrientedBoundingBox()
     box.center = center
     box.extent = [width, thick, height]

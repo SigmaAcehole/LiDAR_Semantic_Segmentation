@@ -12,36 +12,40 @@ from sensor_msgs.msg import PointCloud2, PointField
 from std_msgs.msg import Header
 import open3d as o3d
 
-class Model(Node):
+class Test(Node):
 
     def __init__(self):
-        super().__init__('model')
+        super().__init__('test')
 
         # Subscriber
-        self.subscription = self.create_subscription(
+        self.subscription_door = self.create_subscription(
             PointCloud2,    # Msg type
-            '/velodyne_points',                      # topic
-            self.listener_callback,      # Function to call
+            '/door',                      # topic
+            self.listener_callback_door,      # Function to call
             10                          # QoS
         )
-        self.scan_num = 0
-        self.subscription
+        self.subscription_door
 
-        # Publisher
-        # self.publisher_ = self.create_publisher(PointCloud2, 'xyz_rgb', 10)
-        # timer_period = 1/10  # seconds
-        # self.timer = self.create_timer(timer_period, self.publisher_callback) 
-
-        # Initializing parameters and objects for moving window point cloud registration
+        # Subscriber
+        self.subscription_opening = self.create_subscription(
+            PointCloud2,    # Msg type
+            '/opening',                      # topic
+            self.listener_callback_opening,      # Function to call
+            10                          # QoS
+        )
+        self.subscription_opening
         
 
     # Callback for subscriber
-    def listener_callback(self, msg):
-        if(self.scan_num < 1):
-            cloud = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z', 'intensity'])))    # Extract XYZ, RGB and intensity from incoming point cloud and store as numpy array
-            np.save('test_data_5.npy', cloud)
-            print(cloud.shape)
-            self.scan_num +=1
+    def listener_callback_door(self, msg):
+        door = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z'])))   
+        door_num = (door.shape[0]/8) if (door.shape[0]>1) else 0
+        print("No. of door = ", door_num)
+
+    def listener_callback_opening(self, msg):
+        opening = np.array(list(read_points(cloud= msg, field_names= ['x', 'y', 'z'])))   
+        opening_num = (opening.shape[0]/8) if (opening.shape[0]>1) else 0
+        print("No. of opening = ", opening_num)
         
 
 """
@@ -134,7 +138,7 @@ def _get_struct_fmt(is_bigendian, fields, field_names=None):
 def main(args=None):
     rclpy.init(args=args)
 
-    subscriber = Model()
+    subscriber = Test()
 
     rclpy.spin(subscriber)
 
