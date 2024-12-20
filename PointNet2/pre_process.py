@@ -1,26 +1,44 @@
+import argparse
+import os
+# from data_utils.S3DISDataLoader import ScannetDatasetWholeScene
+from data_utils.indoor3d_util import g_label2color
+import torch
+import logging
+from pathlib import Path
+import sys
+import importlib
+from tqdm import tqdm
+import provider
 import numpy as np
+
 import open3d as o3d 
+import time
 import copy
 
 def main():
     # Load npy file and extract XYZRGB
-    data = np.load("test_data/lab_corridor_2.npy")
+    data = np.load("test_data/lab_corridor.npy")
 
-    print(data.shape)
+    print("Data shape = ", data.shape)
     
-    data = get_plane(data, add_intensity=True)
-    print("Original data shape = ", data.shape)
-    np.save('test_data/lab_corridor_processed.npy', data)
+    # Optional: Extract only corridor walls with RANSAC for inference
+    # data = get_plane(data)
+    # print(data.shape)
 
-    data_room, index_room = prepare_data(data[:,:6], block_points=4096)
+    # Prepares the data in right format to test on PointNet++
+    data_room, index_room = prepare_data(data, block_points=4096)
+    np.save('test_data/lab_corridor_processed.npy', data)
     np.save("test_data/scene_data.npy", data_room)
     np.save("test_data/scene_point_index.npy", index_room)
-    print("Processed data shape = ", data_room.shape)
+
 
 def prepare_data(points, block_points=4096):
     stride = 1
     block_size=1.0
     padding=0.001
+
+    xyz_min = np.amin(points, axis=0)[0:3]
+    points[:, 0:3] -= xyz_min
 
     coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
     grid_x = int(np.ceil(float(coord_max[0] - coord_min[0] - block_size) / stride) + 1)
@@ -64,29 +82,34 @@ def prepare_data(points, block_points=4096):
     index_room = index_room.reshape((-1, block_points))
     return data_room, index_room
 
-def get_plane(data, add_intensity = False):
+def get_plane(data):
 
     pc = o3d.geometry.PointCloud()
-    intensity = np.array([data[:,6], np.zeros(data.shape[0]), np.zeros(data.shape[0])]).T
     pc.points = o3d.utility.Vector3dVector(data[:,:3])
     pc.colors = o3d.utility.Vector3dVector(data[:,3:6])
-    pc.normals = o3d.utility.Vector3dVector(intensity)
-
     # Plane segmentation using RANSAC
     plane_model, inliers = pc.segment_plane(distance_threshold=0.1, ransac_n=3, num_iterations=5000, probability=0.9999)
+    [a,b,c,d] = plane_model
+    # print(f"Plane equation: {a:.3f}x + {b:.3f}y + {c:.3f}z + {d:.3f} = 0")
     inlier_cloud = pc.select_by_index(inliers)
     outlier_cloud = pc.select_by_index(inliers, invert=True)
+
     plane_model2, inliers2 = outlier_cloud.segment_plane(distance_threshold=0.1, ransac_n=3, num_iterations=5000, probability=0.9999)
+    [a2,b2,c2,d2] = plane_model
+    # print(f"Plane equation: {a2:.3f}x + {b2:.3f}y + {c2:.3f}z + {d2:.3f} = 0")
     inlier_cloud2 = outlier_cloud.select_by_index(inliers2)
+    # outlier_cloud2 = outlier_cloud.select_by_index(inliers2, invert=True)
+
     pc_ransac = copy.deepcopy(inlier_cloud)
     pc_ransac.points.extend(inlier_cloud2.points)
     pc_ransac.colors.extend(inlier_cloud2.colors)
-    pc_ransac.normals.extend(inlier_cloud2.normals)
 
-    if add_intensity: 
-        return np.hstack([np.asarray(pc_ransac.points), np.asarray(pc_ransac.colors), np.asarray(pc_ransac.normals)])[:,:7]  # Also return intensity
-    else:
-        return np.hstack([np.asarray(pc_ransac.points), np.asarray(pc_ransac.colors)])
+    # voxel_down = pc_ransac.voxel_down_sample(voxel_size=0.04)
+    # l, ind = voxel_down.remove_radius_outlier(nb_points=20, radius=0.165)
+    # inlier_cloud3 = voxel_down.select_by_index(ind)
+
+
+    return np.hstack([np.asarray(pc_ransac.points), np.asarray(pc_ransac.colors)])
 
 if __name__ == '__main__':
     main()
