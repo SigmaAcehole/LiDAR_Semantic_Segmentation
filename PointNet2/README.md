@@ -105,4 +105,4 @@ python pre_process.py
 ```shell
 python test_semseg_custom.py --log_dir pointnet2_best_door --visual --batch_size 16
 ```
-Results will be stored as a `.txt` file in `log/sem_seg/pointnet2_best_door/visual`. A 3D viewing tool like CloudCompare can be used to load and view this file. You can choose a different model from log/semseg with the --log_dir arguement. If the test scrip fails with a "Killed" message then reduce --batch_size.
+Results will be stored as a `.txt` file in `log/sem_seg/pointnet2_best_door/visual`. A 3D viewing tool like CloudCompare can be used to load and view this file. You can choose a different model from log/semseg with the --log_dir arguement. If a different model is used which has different number of classes then make appropriate change in classes list (line 23) of `test_semseg_custom.py`. If the test scrip fails with a "Killed" message then reduce --batch_size.
