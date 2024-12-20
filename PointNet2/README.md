@@ -1,5 +1,5 @@
 # PointNet++
-The code is an implementation of [PointNet++]{https://github.com/yanx27/Pointnet_Pointnet2_pytorch}.
+The code is an implementation of {https://github.com/yanx27/Pointnet_Pointnet2_pytorch}.
 ## Tested environment
 1. OS: Ubuntu 22.04 LTS (Used WSL2 but dual-boot should work as well)
 2. Python 3.11.10
@@ -94,7 +94,7 @@ python train_semseg_lidarnet.py --model pointnet2_sem_seg --batch_size 32 --epoc
 It is recommended to use a smaller batch size if training on laptop. If the train script stops running with a "Killed" message then most likely it means it ran out of RAM memory, so reduce batch size in this case.
 
 ## Testing on custom data
-Trained models can be tested on custom data without labels for a qualitative evaluation. The custom pointcloud data should have atleast XYZRGB features. XYZ needs to be in meters and RGB should be an integer from 0 to 255. The custom data needs to be pre-processed before running inference for which a pre-process script is provided. Some example point clouds are already provided in `test_data` for reference.
+Trained models can be tested on custom data without labels for a qualitative evaluation. The custom pointcloud data should have atleast XYZRGB features. XYZ needs to be in meters and RGB should be an integer from 0 to 255. The custom data needs to be pre-processed before running inference for which a pre-process script is provided. An example point cloud is already provided in `test_data` for reference.
 
 1. Save your custom data as a `.npy` file inside `test_data/`. If your data is in a different format, you will have to write a script to convert it into a `.npy` file with first 6 columns being XYZRGB.
 2. Read the `pre_process.py` script to see how to load your custom data. Change the data path in the script and run it.
