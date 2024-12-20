@@ -1,0 +1,5 @@
+  File "/home/ubuntu/Internship/ros2_ws/install/lidar_seg/lib/python3.10/site-packages/lidar_seg/listener_test.py", line 81
+    Without colors
+            ^^^^^^
+SyntaxError: invalid syntax
+
