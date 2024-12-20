@@ -47,7 +47,7 @@ conda install conda-forge::open3d
 ```
 
 ## How to run it
-1. Install Open3D if you are not using virtual environment as mentioned above. 
+1. Install Open3D if you are not using virtual environment as mentioned above. Skip this step if you followed the steps for virtual environment.
 ```shell
 pip install open3d
 ```
